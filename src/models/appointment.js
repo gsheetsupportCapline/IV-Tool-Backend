@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const appointmentSchema = new mongoose.Schema({
   patientID: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: "Patient",
     required: true,
   },
@@ -59,6 +59,9 @@ const appointmentSchema = new mongoose.Schema({
     required: false,
   },
 });
+
+// Create a compound index on startTime and patientID
+appointmentSchema.index({ startTime: 1, patientID: 1 }, { unique: true });
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 
