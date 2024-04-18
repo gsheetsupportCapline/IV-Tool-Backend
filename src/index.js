@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const appointmentRoutes = require("./routes/appointment-routes");
-
+const setupJob = require("./cronJobs/appointmentFetcher");
 const { PORT } = require("./config/server.config");
 const connectToDB = require("./config/db.config");
 
@@ -15,6 +15,8 @@ app.use("/api/appointments", appointmentRoutes);
 app.get("/ping", (req, res) => {
   return res.json({ message: `IV Tool Backend Service is alive` });
 });
+
+setupJob(); // setup Cron Job
 
 app.listen(PORT, async () => {
   console.log(`Server started at PORT :${PORT}`);
