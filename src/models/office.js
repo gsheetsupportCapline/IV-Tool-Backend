@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 
 const officeSchema = new mongoose.Schema({
-  officeName: {
+  name: {
     type: String,
-    required: [true, "Office Name cannot be empty"],
+    required: true,
   },
-  officePassword: {
+  password: {
     type: String,
-    required: [true, "Office Password cannot be empty"],
+    required: true,
   },
 });
 
