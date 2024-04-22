@@ -2,6 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const appointmentRoutes = require("./routes/appointment-routes");
 const officeRoutes = require("./routes/office-routes");
+const userRoutes = require("./routes/user-routes.js");
+const authRoutes = require("./routes/auth-routes.js");
+
 const setupJob = require("./cronJobs/appointmentFetcher");
 const { PORT } = require("./config/server.config");
 const connectToDB = require("./config/db.config");
@@ -14,6 +17,8 @@ app.use(bodyParser.text());
 
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/offices", officeRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/ping", (req, res) => {
   return res.json({ message: `IV Tool Backend Service is alive` });

@@ -2,9 +2,9 @@ const AppointmentRepository = require("../repository/appointment-repository");
 
 const Appointment = require("../models/appointment");
 
-const fetchAndSaveData = async () => {
+const fetchAndSaveData = async (officeName) => {
   try {
-    const response = await AppointmentRepository.fetchData();
+    const response = await AppointmentRepository.fetchData(officeName);
     console.log(response);
 
     // Check if the response contains data and that data is an array
