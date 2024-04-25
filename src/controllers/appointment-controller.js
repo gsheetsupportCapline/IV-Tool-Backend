@@ -2,8 +2,7 @@ const AppointmentService = require("../services/appointment-service");
 
 exports.fetchAndSaveAppointments = async (req, res) => {
   try {
-    const officeName = req.params.officeName;
-    await AppointmentService.fetchAndSaveData(officeName);
+    await AppointmentService.fetchDataAndStoreAppointments();
     res
       .status(200)
       .json({ message: "Appointments fetched and saved succesfully" });

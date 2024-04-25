@@ -1,64 +1,89 @@
+// appointment-service.js
+
 const AppointmentRepository = require("../repository/appointment-repository");
-
 const Appointment = require("../models/appointment");
-
-const fetchAndSaveData = async (officeName) => {
+async function fetchDataAndStoreAppointments() {
   try {
-    const response = await AppointmentRepository.fetchData(officeName);
-    console.log(response);
+    // Array of office names
+    const officeNames = [
+      "Aransas",
+      "Azle",
+      "Beaumont",
+      "Benbrook",
+      "Brodie",
+      "Calallen",
+      "Crosby",
+      "Devine",
+      "Elgin",
+      "Huffman",
+      "Jasper",
+      "Lavaca",
+      "Liberty",
+      "Lucas",
+      "Lytle",
+      "Mathis",
+      "Potranco",
+      "Rio Bravo",
+      "Riverwalk",
+      "Rockdale",
+      "Rockwall",
+      "San Mateo",
+      "Sinton",
+      "Splendora",
+      "Springtown",
+      "Tidwell",
+      "Victoria",
+      "Westgreen",
+      "Winnie",
+    ];
 
-    // Check if the response contains data and that data is an array
-    if (response && Array.isArray(response.data)) {
-      const currentDate = new Date();
-      const twoMonthsAgo = new Date();
-      twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
+    // Iterate over each office
+    for (const officeName of officeNames) {
+      const response = await AppointmentRepository.fetchDataByOffice(
+        officeName
+      );
+      // console.log("Response :", response);
+      const appointmentsData = response.data;
+      const result = [];
 
-      for (const item of response.data) {
-        const startTime = new Date(item.c4);
-        const endTime = new Date(item.c10);
-        const confirmationDate = new Date(item.c11);
+      // const formattedAppointments = appointmentsData.map((appointmentData) => ({
+      //   officeName: officeName,
+      //   appointments: [
+      //     {
+      //       appointmentDate: new Date(appointmentData.c5),
+      //       patientID: appointmentData.c1,
+      //     },
+      //   ],
+      // }));
 
-        // Check if the appointment is from the last two months, from the current month, or scheduled for a future date
-        if (
-          (startTime >= twoMonthsAgo && startTime < currentDate) ||
-          startTime.getMonth() === currentDate.getMonth() ||
-          startTime > currentDate
-        ) {
-          try {
-            const appointment = new Appointment({
-              patientID: item.c1,
-              patientName: item.c2,
-              patientDOB: new Date(item.c3),
-              startTime: startTime, // new Date(item.c4),
-              primaryMemberID: item.c5,
-              medicaidID: item.c6,
-              carrierID: item.c7,
-              appointmentType: item.c8,
-              confirmationStatus: item.c9,
-              endTime: endTime, //new Date(item.c10),
+      appointmentsData.forEach((appointmentData) => {
+        // Extract relevant information
+        const appointmentDate = appointmentData.c5;
+        const patientID = appointmentData.c1;
 
-              confirmationDate: confirmationDate, //new Date(item.c11)
-              cellPhone: item.c12,
-              homePhone: item.c13,
-              workPhone: item.c14,
-            });
+        // Push the appointment object into the result array
+        result.push({
+          appointmentDate: appointmentDate,
+          patientID: parseInt(patientID), // Convert patientID to integer
+        });
+      });
+      console.log(result);
+      // Bulk insert appointments for the office
+      // await Appointment.insertMany(formattedAppointments);
 
-            await appointment.save();
-            console.log("Appointment saved successfully:", appointment);
-          } catch (error) {
-            console.error("Error saving appointment:", error);
-          }
-        }
-      }
-    } else {
-      console.error("No data to process or data is not an array");
+      const appointmentDoc = await Appointment.findOneAndUpdate(
+        { officeName: officeName },
+        { officeName: officeName, appointments: result },
+        { upsert: true, new: true }
+      );
     }
   } catch (error) {
-    console.error("Error in fetchAndSaveData:", error);
+    console.log("Error at Service Layer");
+    console.error("Error fetching and storing data:", error);
     throw error;
   }
-};
+}
 
 module.exports = {
-  fetchAndSaveData,
+  fetchDataAndStoreAppointments,
 };

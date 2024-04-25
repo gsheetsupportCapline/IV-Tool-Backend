@@ -1,41 +1,40 @@
+// appointment-repository.js
+
 const axios = require("axios");
 const { ES_URL } = require("../config/server.config");
-async function fetchData() {
+const Appointment = require("../models/appointment");
+
+async function fetchDataByOffice(officeName) {
   try {
     const currentDate = new Date();
-
-    // Calculate the start date two months ago
     const twoMonthsAgo = new Date(currentDate);
     twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
 
-    // Format the start date as 'MM/DD/YYYY'
     const startDate = `${
       twoMonthsAgo.getMonth() + 1
     }/${twoMonthsAgo.getDate()}/${twoMonthsAgo.getFullYear()}`;
-
-    // Format the end date as 'MM/DD/YYYY'
     const endDate = `${
       currentDate.getMonth() + 1
     }/${currentDate.getDate()}/${currentDate.getFullYear()}`;
 
     const response = await axios.get(ES_URL, {
       params: {
-        office: "Aransas",
+        office: officeName,
         password: "134568",
-        query: `from appointment,patient,chairs Where patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
+        query: `from patient,appointment,chairs,patient_letter,employer,insurance_company Where  patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND patient_letter.patient_id=appointment.patient_id AND employer.employer_id=patient.prim_employer_id AND employer.insurance_company_id=insurance_company.insurance_company_id AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
         selectcolumns:
-          "appointment.patient_id,appointment.description,patient.birth_date,appointment.start_time,patient.prim_member_id,patient.medicaid_id,patient.carrier_id,chairs.chair_name,appointment.confirmation_status, appointment.end_time,appointment.date_confirmed,patient.cell_phone,patient.home_phone,patient.work_phone",
-        columnCount: "14",
+          "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name",
+        columnCount: "13",
       },
     });
+
     return response.data;
   } catch (error) {
-    console.log("Error at Repository Layer");
-    console.error("Error fetching data:", error);
+    console.error(`Error fetching data for ${officeName} at Repository Layer`);
     throw error;
   }
 }
 
 module.exports = {
-  fetchData,
+  fetchDataByOffice,
 };
