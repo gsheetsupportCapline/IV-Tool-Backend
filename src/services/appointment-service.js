@@ -58,13 +58,44 @@ async function fetchDataAndStoreAppointments() {
 
       appointmentsData.forEach((appointmentData) => {
         // Extract relevant information
-        const appointmentDate = appointmentData.c5;
-        const patientID = appointmentData.c1;
-
+        const appointmentDate = new Date(appointmentData.c5);
+        const patientId = appointmentData.c1;
+        const patientName = `${appointmentData.c12} ${appointmentData.c13}`;
+        const insuranceName = appointmentData.c7;
+        const insurancePhone = appointmentData.c8;
+        const policyHolderName = appointmentData.c2;
+        const policyHolderDOB = appointmentData.c4;
+        const appointmentType = appointmentData.c6; // chair name
+        const memberId = appointmentData.c9;
+        const employerName = appointmentData.c10;
+        const groupNumber = appointmentData.c11;
+        const relationWithPatient = appointmentData.c3;
+        const medicaidId = appointmentData.c14;
+        const carrierId = appointmentData.c15;
+        const confirmationStatus = appointmentData.c16;
+        const cellPhone = appointmentData.c17;
+        const homePhone = appointmentData.c18;
+        const workPhone = appointmentData.c19;
         // Push the appointment object into the result array
         result.push({
           appointmentDate: appointmentDate,
-          patientID: parseInt(patientID), // Convert patientID to integer
+          patientId: patientId,
+          patientName: patientName,
+          insuranceName: insuranceName,
+          insurancePhone: insurancePhone,
+          policyHolderName: policyHolderName,
+          policyHolderDOB: policyHolderDOB,
+          appointmentType: appointmentType,
+          memberId: memberId,
+          employerName: employerName,
+          groupNumber: groupNumber,
+          relationWithPatient: relationWithPatient,
+          medicaidId: medicaidId,
+          carrierId: carrierId,
+          confirmationStatus: confirmationStatus,
+          cellPhone: cellPhone,
+          homePhone: homePhone,
+          workPhone: workPhone,
         });
       });
       console.log(result);

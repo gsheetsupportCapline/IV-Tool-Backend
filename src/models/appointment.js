@@ -22,55 +22,56 @@ const appointmentSchema = new mongoose.Schema(
           required: false,
         },
 
-        patientID: {
-          type: String,
+        patientId: {
+          type: Number,
           required: false,
         },
         patientName: {
           type: String,
           required: false,
         },
-        patientDOB: {
-          type: Date,
+
+        insuranceName: {
+          type: String,
           required: false,
         },
-        insurance_name: {
+        insurancePhone: {
           type: String,
           required: false,
         },
 
-        policy_holder_name: {
+        policyHolderName: {
           type: String,
           required: false,
         },
-        policy_holder_dob: {
-          type: Date,
-          required: false,
-        },
-
-        primaryMemberID: {
+        policyHolderDOB: {
           type: String,
           required: false,
         },
 
-        employer_name: {
-          type: String,
-          required: false,
-        },
-        group: {
-          type: String,
-          required: false,
-        },
-        relation_with_patient: {
+        memberId: {
           type: String,
           required: false,
         },
 
-        medicaidID: {
+        employerName: {
           type: String,
           required: false,
         },
-        carrierID: {
+        groupNumber: {
+          type: String,
+          required: false,
+        },
+        relationWithPatient: {
+          type: String,
+          required: false,
+        },
+
+        medicaidId: {
+          type: String,
+          required: false,
+        },
+        carrierId: {
           type: String,
           required: false,
         },
@@ -110,7 +111,10 @@ const appointmentSchema = new mongoose.Schema(
 );
 
 // Create a compound index on startTime and patientID
-// appointmentSchema.index({ appointmentDate: 1, patientID: 1 }, { unique: true });
+// appointmentSchema.index(
+//   { appointmentDate: 1, patientID: 1, insuranceName: 1 },
+//   { unique: true }
+// );
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 
