@@ -10,6 +10,5 @@ router.get(
   "/fetch-appointments/:officeName",
   AppointmentController.fetchDataForSpecificOffice
 );
-console.log("route ");
 
 module.exports = router;

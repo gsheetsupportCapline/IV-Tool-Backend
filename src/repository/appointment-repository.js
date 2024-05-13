@@ -35,6 +35,18 @@ async function fetchDataByOffice(officeName) {
   }
 }
 
+async function getDataForOffice(officeName) {
+  try {
+    const appointmentData = await Appointment.find({ officeName: officeName });
+    console.log("appointments", appointmentData);
+    return appointmentData;
+  } catch (error) {
+    console.error(`Error fetching for ${officeName} at Repository layer`);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataByOffice,
+  getDataForOffice,
 };

@@ -117,30 +117,30 @@ async function fetchDataAndStoreAppointments() {
 
 async function fetchDataForSpecificOffice(officeName) {
   try {
-    const response = await AppointmentRepository.fetchDataByOffice(officeName);
-    const officeData = response.data;
+    const response = await AppointmentRepository.getDataForOffice(officeName);
+    const officeData = response[0].appointments;
     const result = [];
-
+    console.log("office data", officeData);
     officeData.forEach((appointmentData) => {
       // Extract relevant information
-      const appointmentDate = new Date(appointmentData.c5);
-      const patientId = appointmentData.c1;
-      const patientName = `${appointmentData.c12} ${appointmentData.c13}`;
-      const insuranceName = appointmentData.c7;
-      const insurancePhone = appointmentData.c8;
-      const policyHolderName = appointmentData.c2;
-      const policyHolderDOB = appointmentData.c4;
-      const appointmentType = appointmentData.c6; // chair name
-      const memberId = appointmentData.c9;
-      const employerName = appointmentData.c10;
-      const groupNumber = appointmentData.c11;
-      const relationWithPatient = appointmentData.c3;
-      const medicaidId = appointmentData.c14;
-      const carrierId = appointmentData.c15;
-      const confirmationStatus = appointmentData.c16;
-      const cellPhone = appointmentData.c17;
-      const homePhone = appointmentData.c18;
-      const workPhone = appointmentData.c19;
+      const appointmentDate = new Date(appointmentData.appointmentDate);
+      const patientId = appointmentData.patientId;
+      const patientName = `${appointmentData.firstName} ${appointmentData.lastName}`;
+      const insuranceName = appointmentData.insuranceName;
+      const insurancePhone = appointmentData.insurancePhone;
+      const policyHolderName = appointmentData.policyHolderName;
+      const policyHolderDOB = appointmentData.policyHolderDOB;
+      const appointmentType = appointmentData.appointmentType; // chair name
+      const memberId = appointmentData.memberId;
+      const employerName = appointmentData.employerName;
+      const groupNumber = appointmentData.groupNumber;
+      const relationWithPatient = appointmentData.relationWithPatient;
+      const medicaidId = appointmentData.medicaidId;
+      const carrierId = appointmentData.carrierId;
+      const confirmationStatus = appointmentData.confirmationStatus;
+      const cellPhone = appointmentData.cellPhone;
+      const homePhone = appointmentData.homePhone;
+      const workPhone = appointmentData.workPhone;
       // Push the appointment object into the result array
       result.push({
         appointmentDate: appointmentDate,
