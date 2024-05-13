@@ -6,7 +6,7 @@ const userRepository = {
       const user = new User(data);
       return await user.save();
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log("Something went wrong in the user - repository layer");
       throw error;
     }
   },

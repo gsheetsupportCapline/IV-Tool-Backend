@@ -4,6 +4,7 @@ const appointmentRoutes = require("./routes/appointment-routes");
 const officeRoutes = require("./routes/office-routes");
 const userRoutes = require("./routes/user-routes.js");
 const authRoutes = require("./routes/auth-routes.js");
+const cors = require("cors");
 
 const setupJob = require("./cronJobs/appointmentFetcher");
 const { PORT } = require("./config/server.config");
@@ -14,6 +15,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.text());
+app.use(cors());
 
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/offices", officeRoutes);

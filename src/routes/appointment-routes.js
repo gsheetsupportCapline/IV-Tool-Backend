@@ -6,5 +6,10 @@ router.post(
   "/fetch-and-save-appointments",
   AppointmentController.fetchAndSaveAppointments
 );
+router.get(
+  "/fetch-appointments/:officeName",
+  AppointmentController.fetchDataForSpecificOffice
+);
+console.log("route ");
 
 module.exports = router;

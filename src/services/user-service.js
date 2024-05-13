@@ -19,12 +19,24 @@ const userService = {
     }
   },
 
-  signin: async (email, password) => {
+  signin: async (email, password, officeName) => {
     try {
+      console.log("officename", officeName);
       const user = await userService.getUserByEmail(email);
+      console.log("user data", user);
       console.log("Sign in request intitiated");
       if (!user) {
         throw { message: "No user found" };
+      }
+
+      // Find the office by name
+      // const office = await userRepository.findBy({ office: officeName });
+      // if (!office) {
+      //   throw { message: "Office not found" };
+      // }
+      // Check if the user has access to the specified office
+      if (user.office !== officeName) {
+        throw { message: "User does not have access to this office" };
       }
 
       if (!user.comparePassword(password)) {

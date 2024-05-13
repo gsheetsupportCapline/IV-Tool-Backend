@@ -20,6 +20,20 @@ const authenticate = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Extract officeName from the request parameters
+    const officeName = req.query.officeName;
+    if (!officeName) {
+      return res.status(400).json({ message: "Office name is required" });
+    }
+
+    // Check if the user has access to the specified office
+    const office = await User.findOne({ office: officeName });
+    if (!office) {
+      return res
+        .status(403)
+        .json({ message: "User does not have access to this office" });
+    }
+
     req.user = user;
     next();
   } catch (error) {

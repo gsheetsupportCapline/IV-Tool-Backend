@@ -9,6 +9,7 @@ const signup = async (req, res) => {
       password: req.body.password,
       name: req.body.name,
       role: req.body.role || "user",
+      office: req.body.office,
     });
     return res.status(201).json({
       success: true,
@@ -28,7 +29,11 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const token = await userService.signin(req.body.email, req.body.password);
+    const token = await userService.signin(
+      req.body.email,
+      req.body.password,
+      req.body.office
+    );
     return res.status(200).json({
       success: true,
       message: "Successfully logged in",
