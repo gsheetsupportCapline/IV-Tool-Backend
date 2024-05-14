@@ -49,5 +49,13 @@ const userService = {
       throw error;
     }
   },
+
+  getAllUsers: async () => {
+    try {
+      return await userRepository.findAll();
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 module.exports = userService;

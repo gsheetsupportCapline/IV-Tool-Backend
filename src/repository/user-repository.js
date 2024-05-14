@@ -20,6 +20,14 @@ const userRepository = {
       throw error;
     }
   },
+
+  findAll: async () => {
+    try {
+      return await User.find({});
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 module.exports = userRepository;
