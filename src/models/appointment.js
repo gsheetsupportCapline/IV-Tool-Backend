@@ -104,6 +104,25 @@ const appointmentSchema = new mongoose.Schema(
           type: String,
           required: false,
         },
+        ivType: {
+          type: String,
+          enum: ["Normal", "Rush"],
+          default: "Normal",
+        },
+        completionStatus: {
+          type: String,
+          enum: ["IV Not Done", "In Process", "Completed"],
+          default: "IV Not Done",
+        },
+        status: {
+          type: String,
+          enum: ["Assigned", "Unassigned"],
+          default: "Unassigned",
+        },
+        assignedUser: {
+          type: String,
+          required: false,
+        },
       },
     ],
   },

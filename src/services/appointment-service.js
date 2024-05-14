@@ -141,6 +141,7 @@ async function fetchDataForSpecificOffice(officeName) {
       const cellPhone = appointmentData.cellPhone;
       const homePhone = appointmentData.homePhone;
       const workPhone = appointmentData.workPhone;
+      const ivType = appointmentData.ivType;
       // Push the appointment object into the result array
       result.push({
         appointmentDate: appointmentDate,
@@ -161,6 +162,7 @@ async function fetchDataForSpecificOffice(officeName) {
         cellPhone: cellPhone,
         homePhone: homePhone,
         workPhone: workPhone,
+        ivType: ivType,
       });
     });
     console.log(result);
