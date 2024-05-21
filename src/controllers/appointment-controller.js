@@ -25,7 +25,27 @@ const fetchDataForSpecificOffice = async (req, res) => {
   }
 };
 
+const updateAppointmentInArray = async (req, res) => {
+  try {
+    console.log("controller");
+    const { officeName, appointmentId } = req.params;
+    const { userId, status } = req.body;
+    console.log("officeName:", officeName, "appointmentId:", appointmentId);
+    const updatedAppointment =
+      await AppointmentService.updateAppointmentInArray(
+        officeName,
+        appointmentId,
+        userId,
+        status
+      );
+    res.status(200).json(updatedAppointment);
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
+  updateAppointmentInArray,
 };

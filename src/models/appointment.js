@@ -122,6 +122,7 @@ const appointmentSchema = new mongoose.Schema(
         assignedUser: {
           type: String,
           required: false,
+          default: null,
         },
       },
     ],

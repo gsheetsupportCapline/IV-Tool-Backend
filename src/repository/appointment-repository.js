@@ -46,7 +46,46 @@ async function getDataForOffice(officeName) {
   }
 }
 
+async function updateAppointmentInArray(
+  officeName,
+  appointmentId,
+  userId,
+  status
+) {
+  try {
+    console.log("repository");
+    const doc = await Appointment.findOne({ officeName: officeName });
+    if (!doc) {
+      throw new Error("Office not found");
+    }
+    const appointmentIndex = doc.appointments.findIndex(
+      (appointment) => appointment._id.toString() === appointmentId
+    );
+    console.log("appointmentIndex", appointmentIndex);
+    if (appointmentIndex === -1) {
+      throw new Error("Appointment not found");
+    }
+    console.log("doc _id", doc._id);
+    const result = await Appointment.updateOne(
+      { _id: doc._id },
+      {
+        $set: {
+          [`appointments.${appointmentIndex}.assignedUser`]: userId,
+          [`appointments.${appointmentIndex}.status`]: status,
+        },
+      }
+    );
+    console.log("result in repository", result);
+    return result;
+  } catch (error) {
+    console.error(
+      `Error updating appointmentfor office: ${office} , appointmentId :${appointmentId} `
+    );
+    throw error;
+  }
+}
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
+  updateAppointmentInArray,
 };
