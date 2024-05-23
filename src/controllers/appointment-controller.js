@@ -44,8 +44,26 @@ const updateAppointmentInArray = async (req, res) => {
   }
 };
 
+const createNewRushAppointment = async (req, res) => {
+  try {
+    const officeName = req.params.officeName;
+    const newData = req.body;
+    const result = await AppointmentService.createNewRushAppointment(
+      officeName,
+      newData
+    );
+    res
+      .status(201)
+      .json({ message: "Appointment created successfully", result });
+  } catch (error) {
+    console.error("Error creating new appointment", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
   updateAppointmentInArray,
+  createNewRushAppointment,
 };

@@ -8,6 +8,7 @@ const setupJob = () => {
     try {
       console.log("Running fetchAndSaveData daily at 12:00 AM");
       const response = await appointmentService.fetchDataAndStoreAppointments();
+      console.log("result", response);
       if (!response) {
         console.error(
           "No response received from fetchDataAndStoreAppointments"

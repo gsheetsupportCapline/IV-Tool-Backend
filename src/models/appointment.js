@@ -30,6 +30,14 @@ const appointmentSchema = new mongoose.Schema(
           type: String,
           required: false,
         },
+        patientDOB: {
+          type: Date,
+          required: false,
+        },
+        MIDSSN: {
+          type: String,
+          required: false,
+        },
 
         insuranceName: {
           type: String,
@@ -123,6 +131,14 @@ const appointmentSchema = new mongoose.Schema(
           type: String,
           required: false,
           default: null,
+        },
+        provider: {
+          type: String,
+          required: false,
+          default: null,
+        },
+        lastUpdatedAt: {
+          type: Date,
         },
       },
     ],

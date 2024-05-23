@@ -19,4 +19,9 @@ router.put(
   AppointmentController.updateAppointmentInArray
 );
 
+router.post(
+  "/create-new-appointment/:officeName",
+  AppointmentController.createNewRushAppointment
+);
+
 module.exports = router;

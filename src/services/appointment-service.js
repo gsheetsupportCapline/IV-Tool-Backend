@@ -100,7 +100,7 @@ async function fetchDataAndStoreAppointments() {
           workPhone: workPhone,
         });
       });
-      console.log(result);
+      // console.log(result);
       // Bulk insert appointments for the office
       // await Appointment.insertMany(formattedAppointments);
 
@@ -234,8 +234,41 @@ async function updateAppointmentInArray(
   }
 }
 
+async function createNewRushAppointment(officeName, data) {
+  try {
+    const newAppointment = {
+      appointmentDate: new Date(data.appointmentDate),
+      // appointmentTime: data.appointmentTime,
+      provider: data.provider,
+      patientId: data.patientId,
+      patientDOB: new Date(data.patientDOB),
+      patientName: data.patientName,
+      policyHolderName: data.policyHolderName,
+      policyHolderDOB: new Date(data.policyHolderDOB),
+      MIDSSN: data.MIDSSN,
+      insuranceName: data.insuranceName,
+      insurancePhone: data.insurancePhone,
+      ivType: "Rush",
+    };
+
+    const result = await Appointment.updateOne(
+      { officeName: officeName },
+      { $push: { appointments: newAppointment } }
+    );
+    console.log("hhhhh");
+    if (!result.matchedCount) {
+      throw new Error("Office not found");
+    }
+    return result;
+  } catch (error) {
+    console.error("Error creating new appointment :", error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
   updateAppointmentInArray,
+  createNewRushAppointment,
 };
