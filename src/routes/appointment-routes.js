@@ -24,4 +24,9 @@ router.post(
   AppointmentController.createNewRushAppointment
 );
 
+router.get(
+  "/user-appointments/:userId",
+  AppointmentController.fetchUserAppointments
+);
+
 module.exports = router;

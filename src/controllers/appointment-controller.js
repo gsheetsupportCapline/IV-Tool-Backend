@@ -61,9 +61,22 @@ const createNewRushAppointment = async (req, res) => {
   }
 };
 
+const fetchUserAppointments = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const appointments = await AppointmentService.fetchUserAppointments(userId);
+    console.log("Appointment response", appointments);
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.log("Error at Controller layer");
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
   updateAppointmentInArray,
   createNewRushAppointment,
+  fetchUserAppointments,
 };

@@ -152,6 +152,7 @@ const appointmentSchema = new mongoose.Schema(
 //   { unique: true }
 // );
 
+appointmentSchema.index({ assignedUser: 1 });
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 
 module.exports = Appointment;

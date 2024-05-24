@@ -266,9 +266,37 @@ async function createNewRushAppointment(officeName, data) {
   }
 }
 
+async function fetchUserAppointments(userId) {
+  try {
+    const appointments = await Appointment.aggregate([
+      { $match: { "appointments.assignedUser": userId } }, // Filter documents where assignedUser matches userId
+      { $unwind: "$appointments" }, // Deconstruct the appointments array
+      { $match: { "appointments.assignedUser": userId } }, // Re-filter to ensure only matching appointments are included
+      { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
+      {
+        $group: {
+          _id: "$_id",
+          appointments: { $push: "$appointments" },
+          officeName: { $first: "$officeName" }, // Keep the officeName for reference
+        },
+      },
+    ]);
+    // Check if appointments array is empty
+    if (appointments.length === 0) {
+      console.log("No appointments found for userId:", userId);
+      return [];
+    }
+    return appointments;
+  } catch (error) {
+    console.error("Error fetching user appointments:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
   updateAppointmentInArray,
   createNewRushAppointment,
+  fetchUserAppointments,
 };
