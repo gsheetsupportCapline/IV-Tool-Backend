@@ -29,4 +29,8 @@ router.get(
   AppointmentController.fetchUserAppointments
 );
 
+router.post(
+  "/update-individual-appointment-details",
+  AppointmentController.updateIndividualAppointmentDetails
+);
 module.exports = router;

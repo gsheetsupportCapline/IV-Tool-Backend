@@ -31,7 +31,7 @@ const appointmentSchema = new mongoose.Schema(
           required: false,
         },
         patientDOB: {
-          type: Date,
+          type: String,
           required: false,
         },
         MIDSSN: {
@@ -139,6 +139,20 @@ const appointmentSchema = new mongoose.Schema(
         },
         lastUpdatedAt: {
           type: Date,
+        },
+
+        ivRemarks: {
+          type: String,
+          required: false,
+        },
+
+        source: {
+          type: String,
+          required: false,
+        },
+        planType: {
+          type: String,
+          required: false,
         },
       },
     ],

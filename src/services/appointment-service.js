@@ -1,5 +1,5 @@
 // appointment-service.js
-
+const mongoose = require("mongoose");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
 
@@ -77,6 +77,7 @@ async function fetchDataAndStoreAppointments() {
         const cellPhone = appointmentData.c17;
         const homePhone = appointmentData.c18;
         const workPhone = appointmentData.c19;
+        const patientDOB = appointmentData.c20;
 
         // Push the appointment object into the result array
         result.push({
@@ -98,6 +99,7 @@ async function fetchDataAndStoreAppointments() {
           cellPhone: cellPhone,
           homePhone: homePhone,
           workPhone: workPhone,
+          patientDOB: patientDOB,
         });
       });
       // console.log(result);
@@ -203,14 +205,16 @@ async function updateAppointmentInArray(
   officeName,
   appointmentId,
   userId,
-  status
+  status,
+  completionStatus
 ) {
   try {
     const result = await AppointmentRepository.updateAppointmentInArray(
       officeName,
       appointmentId,
       userId,
-      status
+      status,
+      completionStatus
     );
     if (!result.matchedCount) {
       throw new Error("Appointment not found or no matching office");
@@ -286,9 +290,57 @@ async function fetchUserAppointments(userId) {
       console.log("No appointments found for userId:", userId);
       return [];
     }
+
     return appointments;
   } catch (error) {
     console.error("Error fetching user appointments:", error);
+    throw error;
+  }
+}
+
+async function updateIndividualAppointmentDetails(
+  appointmentId,
+  ivRemarks,
+  source,
+  planType
+) {
+  try {
+    const filter = {
+      "appointments._id": appointmentId,
+    };
+
+    // Define the update operation to modify the specified fields of the targeted appointment
+    const updateOperation = {
+      $set: {
+        "appointments.$[elem].ivRemarks": ivRemarks,
+        "appointments.$[elem].source": source,
+        "appointments.$[elem].planType": planType,
+        "appointments.$[elem].completionStatus": "Completed",
+      },
+    };
+
+    // Specify the arrayFilters option to target the correct appointment within the array
+    const arrayFilters = [
+      {
+        "elem._id": appointmentId,
+      },
+    ];
+
+    // Execute the update operation
+    const updateResult = await Appointment.updateOne(filter, updateOperation, {
+      arrayFilters: arrayFilters,
+    });
+
+    if (!updateResult.matchedCount) {
+      throw new Error(
+        `No matching appointment found for appointment ID ${appointmentId}`
+      );
+    }
+
+    // Optionally, return the updated document or a success message
+    return updateResult;
+  } catch (error) {
+    console.error("Error updating individual appointment details:", error);
     throw error;
   }
 }
@@ -299,4 +351,5 @@ module.exports = {
   updateAppointmentInArray,
   createNewRushAppointment,
   fetchUserAppointments,
+  updateIndividualAppointmentDetails,
 };

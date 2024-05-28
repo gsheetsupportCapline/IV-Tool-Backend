@@ -29,14 +29,15 @@ const updateAppointmentInArray = async (req, res) => {
   try {
     console.log("controller");
     const { officeName, appointmentId } = req.params;
-    const { userId, status } = req.body;
+    const { userId, status, completionStatus } = req.body;
     console.log("officeName:", officeName, "appointmentId:", appointmentId);
     const updatedAppointment =
       await AppointmentService.updateAppointmentInArray(
         officeName,
         appointmentId,
         userId,
-        status
+        status,
+        completionStatus
       );
     res.status(200).json(updatedAppointment);
   } catch (error) {
@@ -73,10 +74,32 @@ const fetchUserAppointments = async (req, res) => {
   }
 };
 
+const updateIndividualAppointmentDetails = async (req, res) => {
+  try {
+    const { appointmentId, ivRemarks, source, planType } = req.body;
+
+    const updatedAppointment =
+      await AppointmentService.updateIndividualAppointmentDetails(
+        appointmentId,
+        ivRemarks,
+        source,
+        planType
+      );
+
+    res.status(200).json(updatedAppointment);
+  } catch (error) {
+    console.error("Error updating individual appointment details:", error);
+    res
+      .status(500)
+      .send({ error: "Failed to update individual appointment details" });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
   updateAppointmentInArray,
   createNewRushAppointment,
   fetchUserAppointments,
+  updateIndividualAppointmentDetails,
 };

@@ -23,8 +23,8 @@ async function fetchDataByOffice(officeName) {
         password: "134568",
         query: `from patient,appointment,chairs,patient_letter,employer,insurance_company Where  patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND patient_letter.patient_id=appointment.patient_id AND employer.employer_id=patient.prim_employer_id AND employer.insurance_company_id=insurance_company.insurance_company_id AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
         selectcolumns:
-          "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone",
-        columnCount: "19",
+          "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date",
+        columnCount: "20",
       },
     });
 
@@ -50,7 +50,8 @@ async function updateAppointmentInArray(
   officeName,
   appointmentId,
   userId,
-  status
+  status,
+  completionStatus
 ) {
   try {
     console.log("repository");
@@ -72,6 +73,8 @@ async function updateAppointmentInArray(
         $set: {
           [`appointments.${appointmentIndex}.assignedUser`]: userId,
           [`appointments.${appointmentIndex}.status`]: status,
+          [`appointments.${appointmentIndex}.completionStatus`]:
+            completionStatus,
         },
       }
     );
