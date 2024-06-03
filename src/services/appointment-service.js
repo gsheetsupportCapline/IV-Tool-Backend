@@ -59,7 +59,19 @@ async function fetchDataAndStoreAppointments() {
 
       appointmentsData.forEach((appointmentData) => {
         // Extract relevant information
+
         const appointmentDate = new Date(appointmentData.c5);
+        const hours = appointmentDate.getHours().toString().padStart(2, "0"); // Ensure two digits for hours
+        const minutes = appointmentDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0"); // Ensure two digits for minutes
+        const seconds = appointmentDate
+          .getSeconds()
+          .toString()
+          .padStart(2, "0"); // Ensure two digits for seconds
+        const appointmentTime = `${hours}:${minutes}:${seconds}`;
+
         const patientId = appointmentData.c1;
         const patientName = `${appointmentData.c12} ${appointmentData.c13}`;
         const insuranceName = appointmentData.c7;
@@ -82,6 +94,7 @@ async function fetchDataAndStoreAppointments() {
         // Push the appointment object into the result array
         result.push({
           appointmentDate: appointmentDate,
+          appointmentTime: appointmentTime,
           patientId: patientId,
           patientName: patientName,
           insuranceName: insuranceName,
@@ -152,6 +165,9 @@ async function fetchDataForSpecificOffice(officeName) {
       const completionStatus = appointmentData.completionStatus;
       const office = officeName;
       const _id = appointmentData._id;
+      const planType = appointmentData.planType;
+      const ivRemarks = appointmentData.ivRemarks;
+      const source = appointmentData.source;
 
       const appointmentTime = `${appointmentData.appointmentDate
         .getUTCHours()
@@ -190,6 +206,9 @@ async function fetchDataForSpecificOffice(officeName) {
         assignedUser: assignedUser,
         completionStatus: completionStatus,
         appointmentTime: appointmentTime,
+        ivRemarks: ivRemarks,
+        planType: planType,
+        source: source,
       });
     });
 

@@ -23,14 +23,13 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "officeuser"],
       default: "user",
     },
 
-    office: {
+    assignedOffice: {
       type: String,
-
-      required: true,
+      required: false,
     },
   },
   { timestamps: true }

@@ -6,6 +6,7 @@ const userService = {
       const user = await userRepository.create(data);
       return user;
     } catch (error) {
+      console.log("Something went wrong in the user - service layer");
       throw error;
     }
   },
@@ -15,13 +16,13 @@ const userService = {
       const user = await userRepository.findBy({ email });
       return user;
     } catch (error) {
+      console.log("Something went wrong in the user - service layer");
       throw error;
     }
   },
 
-  signin: async (email, password, officeName) => {
+  signin: async (email, password) => {
     try {
-      console.log("officename", officeName);
       const user = await userService.getUserByEmail(email);
       console.log("user data", user);
       console.log("Sign in request intitiated");
@@ -29,22 +30,12 @@ const userService = {
         throw { message: "No user found" };
       }
 
-      // Find the office by name
-      // const office = await userRepository.findBy({ office: officeName });
-      // if (!office) {
-      //   throw { message: "Office not found" };
-      // }
-      // Check if the user has access to the specified office
-      if (user.office !== officeName) {
-        throw { message: "User does not have access to this office" };
-      }
-
       if (!user.comparePassword(password)) {
         throw { message: "Incorrect password" };
       }
 
       const token = user.genJWT();
-      return token;
+      return { token, userDetails: user };
     } catch (error) {
       throw error;
     }
