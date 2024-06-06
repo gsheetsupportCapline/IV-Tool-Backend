@@ -33,4 +33,11 @@ router.post(
   "/update-individual-appointment-details",
   AppointmentController.updateIndividualAppointmentDetails
 );
+
+router.get(
+  "/assigned-counts/:officeName",
+  AppointmentController.getAssignedCounts
+);
+
+router.get("/pending-iv-counts", AppointmentController.getPendingIVCounts);
 module.exports = router;

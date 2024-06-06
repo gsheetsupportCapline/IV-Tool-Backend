@@ -364,6 +364,39 @@ async function updateIndividualAppointmentDetails(
   }
 }
 
+async function getAssignedCountsByOffice(officeName) {
+  const counts = await AppointmentRepository.getAssignedCountsByOffice(
+    officeName
+  );
+  return {
+    officeName,
+    assignedCounts: counts,
+  };
+}
+async function getPendingIVCountsByOffice() {
+  const results = await AppointmentRepository.getPendingIVCountsByOffice();
+
+  // Assuming results are grouped by officeName and date, transform them into the desired structure
+  const officeCounts = results.reduce(
+    (acc, { _id: { officeName, date } }, count) => {
+      if (!acc[officeName]) {
+        acc[officeName] = { OfficeName: officeName, PendingCount: {} };
+      }
+      acc[officeName].PendingCount[date] = count;
+      return acc;
+    },
+    {}
+  );
+
+  // Convert the object to an array of objects for easier handling
+  const formattedResults = Object.keys(officeCounts).map((officeName) => ({
+    OfficeName: officeName,
+    PendingCount: officeCounts[officeName].PendingCount,
+  }));
+
+  return formattedResults;
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -371,4 +404,6 @@ module.exports = {
   createNewRushAppointment,
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
+  getAssignedCountsByOffice,
+  getPendingIVCountsByOffice,
 };

@@ -95,6 +95,30 @@ const updateIndividualAppointmentDetails = async (req, res) => {
   }
 };
 
+const getAssignedCounts = async (req, res) => {
+  const { officeName } = req.params;
+
+  try {
+    const result = await AppointmentService.getAssignedCountsByOffice(
+      officeName
+    );
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to fetch assigned counts." });
+  }
+};
+
+const getPendingIVCounts = async (req, res) => {
+  try {
+    const pendingCounts = await AppointmentService.getPendingIVCountsByOffice();
+    res.json(pendingCounts);
+  } catch (error) {
+    console.error("Error fetching pending IV counts:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -102,4 +126,6 @@ module.exports = {
   createNewRushAppointment,
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
+  getAssignedCounts,
+  getPendingIVCounts,
 };

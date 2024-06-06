@@ -87,8 +87,77 @@ async function updateAppointmentInArray(
     throw error;
   }
 }
+
+async function getAssignedCountsByOffice(officeName) {
+  try {
+    const pipeline = [
+      { $match: { officeName: officeName } },
+      { $unwind: "$appointments" }, // Flatten the appointments array
+      { $match: { "appointments.status": "Assigned" } }, // Now filter based on the unwound appointments
+      {
+        $group: {
+          _id: "$appointments.assignedUser", // Group by assignedUser within appointments
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ];
+    console.log(pipeline);
+    const counts = await Appointment.aggregate(pipeline);
+    console.log(counts);
+    return counts.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error(
+      `Error fetching assigned counts for office: ${officeName}`,
+      error
+    );
+    throw error;
+  }
+}
+
+async function getPendingIVCountsByOffice() {
+  try {
+    const pipeline = [
+      {
+        $match: {
+          "appointments.status": "Assigned",
+          "appointments.completionStatus": "IV Not Done",
+        },
+      },
+      { $unwind: "$appointments" },
+      {
+        $group: {
+          _id: {
+            officeName: "$officeName",
+            date: {
+              $dateToString: {
+                format: "%d-%m-%Y",
+                date: "$appointments.appointmentDate",
+              },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.date": -1 } },
+      { $limit: 3 }, // latest 3 appointments
+    ];
+
+    const results = await Appointment.aggregate(pipeline);
+    return results;
+  } catch (error) {
+    console.error(`Error fetching pending IV counts for offices: ${error}`);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
   updateAppointmentInArray,
+  getAssignedCountsByOffice,
+  getPendingIVCountsByOffice,
 };
