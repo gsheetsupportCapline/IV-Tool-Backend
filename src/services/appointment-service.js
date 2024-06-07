@@ -2,6 +2,7 @@
 const mongoose = require("mongoose");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
+const { getNextFiveWorkingDays } = require("../utils");
 
 async function fetchDataAndStoreAppointments() {
   try {
@@ -374,7 +375,16 @@ async function getAssignedCountsByOffice(officeName) {
   };
 }
 async function getPendingIVCountsByOffice() {
-  const results = await AppointmentRepository.getPendingIVCountsByOffice();
+  console.log("In service layer");
+  const workingDays = getNextFiveWorkingDays();
+  console.log(workingDays);
+  const startDate = workingDays[0];
+  const endDate = workingDays[workingDays.length - 1];
+
+  const results = await AppointmentRepository.getPendingIVCountsByOffice(
+    startDate,
+    endDate
+  );
 
   // Assuming results are grouped by officeName and date, transform them into the desired structure
   const officeCounts = results.reduce(

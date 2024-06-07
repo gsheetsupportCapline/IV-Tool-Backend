@@ -118,13 +118,14 @@ async function getAssignedCountsByOffice(officeName) {
   }
 }
 
-async function getPendingIVCountsByOffice() {
+async function getPendingIVCountsByOffice(startDate, endDate) {
   try {
+    console.log("In repository");
     const pipeline = [
       {
         $match: {
-          "appointments.status": "Assigned",
-          "appointments.completionStatus": "IV Not Done",
+          "appointments.status": "Unassigned",
+          "appointments.appointmentDate": { $gte: startDate, $lte: endDate },
         },
       },
       { $unwind: "$appointments" },
@@ -142,11 +143,11 @@ async function getPendingIVCountsByOffice() {
           count: { $sum: 1 },
         },
       },
-      { $sort: { "_id.date": -1 } },
-      { $limit: 3 }, // latest 3 appointments
+      { $sort: { "_id.date": 1 } },
     ];
-
+    console.log(pipeline);
     const results = await Appointment.aggregate(pipeline);
+    console.log(results);
     return results;
   } catch (error) {
     console.error(`Error fetching pending IV counts for offices: ${error}`);

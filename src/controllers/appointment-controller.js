@@ -111,6 +111,7 @@ const getAssignedCounts = async (req, res) => {
 
 const getPendingIVCounts = async (req, res) => {
   try {
+    console.log("In controller");
     const pendingCounts = await AppointmentService.getPendingIVCountsByOffice();
     res.json(pendingCounts);
   } catch (error) {
