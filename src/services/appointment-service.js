@@ -142,7 +142,7 @@ async function fetchDataForSpecificOffice(officeName) {
     console.log("office data", officeData);
     officeData.forEach((appointmentData) => {
       // Extract relevant information
-      const appointmentDate = new Date(appointmentData.appointmentDate);
+      const appointmentDate = appointmentData.appointmentDate;
       const patientId = appointmentData.patientId;
       const patientName = appointmentData.patientName;
       const insuranceName = appointmentData.insuranceName;
@@ -262,13 +262,13 @@ async function createNewRushAppointment(officeName, data) {
   try {
     const newAppointment = {
       appointmentDate: new Date(data.appointmentDate),
-      // appointmentTime: data.appointmentTime,
+      appointmentTime: data.appointmentTime,
       provider: data.provider,
       patientId: data.patientId,
-      patientDOB: new Date(data.patientDOB),
+      patientDOB: data.patientDOB,
       patientName: data.patientName,
       policyHolderName: data.policyHolderName,
-      policyHolderDOB: new Date(data.policyHolderDOB),
+      policyHolderDOB: data.policyHolderDOB,
       MIDSSN: data.MIDSSN,
       insuranceName: data.insuranceName,
       insurancePhone: data.insurancePhone,
