@@ -299,9 +299,46 @@ async function fetchUserAppointments(userId) {
       { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
       {
         $group: {
-          _id: "$_id",
-          appointments: { $push: "$appointments" },
+          _id: "$appointments._id", //Group by appointment id
+          appointment: { $first: "$appointments" }, // Keep the first occurrence of each appointment
           officeName: { $first: "$officeName" }, // Keep the officeName for reference
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $mergeObjects: ["$$ROOT", "$appointment"] },
+        }, // Merge the root document with the appointment document
+      },
+      {
+        $project: {
+          _id: 0, // Exclude the original _id field
+          appointmentType: 1,
+          appointmentDate: 1,
+          appointmentTime: 1,
+          patientId: 1,
+          patientName: 1,
+          patientDOB: 1,
+          insuranceName: 1,
+          insurancePhone: 1,
+          policyHolderName: 1,
+          policyHolderDOB: 1,
+          memberId: 1,
+          employerName: 1,
+          groupNumber: 1,
+          relationWithPatient: 1,
+          medicaidId: 1,
+          carrierId: 1,
+          confirmationStatus: 1,
+          cellPhone: 1,
+          homePhone: 1,
+          workPhone: 1,
+          ivType: 1,
+          completionStatus: 1,
+          status: 1,
+          assignedUser: 1,
+          provider: 1,
+          office: "$officeName", // Add officeName as a field named office
+          _id: "$appointment._id", // Use the appointment's _id as the document's _id
         },
       },
     ]);
