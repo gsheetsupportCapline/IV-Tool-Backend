@@ -144,15 +144,23 @@ const appointmentSchema = new mongoose.Schema(
         ivRemarks: {
           type: String,
           required: false,
+          default: null,
         },
 
         source: {
           type: String,
           required: false,
+          default: null,
         },
         planType: {
           type: String,
           required: false,
+          default: null,
+        },
+        completedBy: {
+          type: String,
+          required: false,
+          default: null,
         },
       },
     ],

@@ -39,5 +39,10 @@ router.get(
   AppointmentController.getAssignedCounts
 );
 
-router.get("/pending-iv-counts", AppointmentController.getPendingIVCounts);
+// In appointment-routes.js
+router.get(
+  "/fetch-unassigned-appointments",
+  AppointmentController.fetchUnassignedAppointmentsInRange
+);
+
 module.exports = router;

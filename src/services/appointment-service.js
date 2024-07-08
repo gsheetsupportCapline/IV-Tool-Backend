@@ -2,7 +2,6 @@
 const mongoose = require("mongoose");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
-const { getNextFiveWorkingDays } = require("../utils");
 
 async function fetchDataAndStoreAppointments() {
   try {
@@ -297,6 +296,7 @@ async function fetchUserAppointments(userId) {
       { $unwind: "$appointments" }, // Deconstruct the appointments array
       { $match: { "appointments.assignedUser": userId } }, // Re-filter to ensure only matching appointments are included
       { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
+
       {
         $group: {
           _id: "$appointments._id", //Group by appointment id
@@ -359,7 +359,8 @@ async function updateIndividualAppointmentDetails(
   appointmentId,
   ivRemarks,
   source,
-  planType
+  planType,
+  completedBy
 ) {
   try {
     const filter = {
@@ -373,6 +374,7 @@ async function updateIndividualAppointmentDetails(
         "appointments.$[elem].source": source,
         "appointments.$[elem].planType": planType,
         "appointments.$[elem].completionStatus": "Completed",
+        "appointments.$[elem].completedBy": completedBy,
       },
     };
 
@@ -411,39 +413,62 @@ async function getAssignedCountsByOffice(officeName) {
     assignedCounts: counts,
   };
 }
-async function getPendingIVCountsByOffice() {
-  console.log("In service layer");
-  const workingDays = getNextFiveWorkingDays();
-  console.log(workingDays);
-  const startDate = workingDays[0];
-  const endDate = workingDays[workingDays.length - 1];
+async function fetchUnassignedAppointmentsInRange(startDate, endDate) {
+  try {
+    // Convert startDate and endDate to Date objects
+    const startDateISO = new Date(startDate).toISOString();
+    // Adjust endDate to the start of the next day to include appointments on the end date up to 23:59:59.999
+    let endDateDate = new Date(endDate); // Use let instead of const for reassignment
+    endDateDate.setDate(endDateDate.getDate() + 1); // Move to the start of the next day
+    endDateDate.setHours(0, 0, 0, 0); // Reset time to 00:00:00.000, which is the start of the next day
+    const endDateISO = endDateDate.toISOString(); // Now assign the ISO string to a new constant variable
 
-  const results = await AppointmentRepository.getPendingIVCountsByOffice(
-    startDate,
-    endDate
-  );
+    const appointments = await Appointment.aggregate([
+      { $match: { "appointments.status": "Unassigned" } },
+      { $unwind: "$appointments" },
+      {
+        $match: {
+          "appointments.status": "Unassigned",
+          "appointments.appointmentDate": {
+            $gte: new Date(startDateISO),
+            $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$appointments.appointmentDate",
+              },
+            },
+            officeName: "$officeName",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.date",
+          offices: {
+            $push: {
+              officeName: "$_id.officeName",
+              count: "$count",
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
 
-  // Assuming results are grouped by officeName and date, transform them into the desired structure
-  const officeCounts = results.reduce(
-    (acc, { _id: { officeName, date } }, count) => {
-      if (!acc[officeName]) {
-        acc[officeName] = { OfficeName: officeName, PendingCount: {} };
-      }
-      acc[officeName].PendingCount[date] = count;
-      return acc;
-    },
-    {}
-  );
-
-  // Convert the object to an array of objects for easier handling
-  const formattedResults = Object.keys(officeCounts).map((officeName) => ({
-    OfficeName: officeName,
-    PendingCount: officeCounts[officeName].PendingCount,
-  }));
-
-  return formattedResults;
+    return appointments;
+  } catch (error) {
+    console.error("Error fetching unassigned appointments:", error);
+    throw error;
+  }
 }
-
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -452,5 +477,5 @@ module.exports = {
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
   getAssignedCountsByOffice,
-  getPendingIVCountsByOffice,
+  fetchUnassignedAppointmentsInRange,
 };

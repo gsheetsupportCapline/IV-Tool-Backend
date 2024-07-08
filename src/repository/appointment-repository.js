@@ -13,9 +13,23 @@ async function fetchDataByOffice(officeName) {
     const startDate = `${
       twoMonthsAgo.getMonth() + 1
     }/${twoMonthsAgo.getDate()}/${twoMonthsAgo.getFullYear()}`;
-    const endDate = `${
-      currentDate.getMonth() + 1
-    }/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+    // const endDate = `${
+    //   currentDate.getMonth() + 1
+    // }/${currentDate.getDate() + 15}/${currentDate.getFullYear()}`;
+
+    let endDate;
+    const daysToAdd = 15;
+
+    // Calculate the end date safely, considering the possibility of exceeding the month's days
+    currentDate.setDate(currentDate.getDate() + daysToAdd);
+    const endMonth = currentDate.getMonth() + 1; // Months are zero-based in JavaScript
+    const endDay = currentDate.getDate();
+    const endYear = currentDate.getFullYear();
+
+    // Format the end date correctly
+    endDate = `${endMonth < 10 ? "0" + endMonth : endMonth}/${
+      endDay < 10 ? "0" + endDay : endDay
+    }/${endYear}`;
 
     const response = await axios.get(ES_URL, {
       params: {
@@ -118,47 +132,9 @@ async function getAssignedCountsByOffice(officeName) {
   }
 }
 
-async function getPendingIVCountsByOffice(startDate, endDate) {
-  try {
-    console.log("In repository");
-    const pipeline = [
-      {
-        $match: {
-          "appointments.status": "Unassigned",
-          "appointments.appointmentDate": { $gte: startDate, $lte: endDate },
-        },
-      },
-      { $unwind: "$appointments" },
-      {
-        $group: {
-          _id: {
-            officeName: "$officeName",
-            date: {
-              $dateToString: {
-                format: "%d-%m-%Y",
-                date: "$appointments.appointmentDate",
-              },
-            },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { "_id.date": 1 } },
-    ];
-    console.log(pipeline);
-    const results = await Appointment.aggregate(pipeline);
-    console.log(results);
-    return results;
-  } catch (error) {
-    console.error(`Error fetching pending IV counts for offices: ${error}`);
-    throw error;
-  }
-}
-
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
   updateAppointmentInArray,
   getAssignedCountsByOffice,
-  getPendingIVCountsByOffice,
 };

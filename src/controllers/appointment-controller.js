@@ -76,14 +76,16 @@ const fetchUserAppointments = async (req, res) => {
 
 const updateIndividualAppointmentDetails = async (req, res) => {
   try {
-    const { appointmentId, ivRemarks, source, planType } = req.body;
+    const { appointmentId, ivRemarks, source, planType, completedBy } =
+      req.body;
 
     const updatedAppointment =
       await AppointmentService.updateIndividualAppointmentDetails(
         appointmentId,
         ivRemarks,
         source,
-        planType
+        planType,
+        completedBy
       );
 
     res.status(200).json(updatedAppointment);
@@ -109,13 +111,18 @@ const getAssignedCounts = async (req, res) => {
   }
 };
 
-const getPendingIVCounts = async (req, res) => {
+const fetchUnassignedAppointmentsInRange = async (req, res) => {
   try {
-    console.log("In controller");
-    const pendingCounts = await AppointmentService.getPendingIVCountsByOffice();
-    res.json(pendingCounts);
+    const { startDate, endDate } = req.query;
+    const appointments =
+      await AppointmentService.fetchUnassignedAppointmentsInRange(
+        startDate,
+        endDate
+      );
+    // console.log("Appointments", appointments);
+    res.status(200).json(appointments);
   } catch (error) {
-    console.error("Error fetching pending IV counts:", error);
+    console.log("Error at Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
@@ -128,5 +135,5 @@ module.exports = {
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
   getAssignedCounts,
-  getPendingIVCounts,
+  fetchUnassignedAppointmentsInRange,
 };
