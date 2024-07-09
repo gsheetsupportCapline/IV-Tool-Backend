@@ -129,6 +129,7 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
 
 const fetchCompletedAppointmentsByOffice = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
     const offices = [
       "Aransas",
       "Azle",
@@ -162,7 +163,11 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     ];
     const results = await Promise.all(
       offices.map((officeName) =>
-        AppointmentService.fetchCompletedAppointmentsCountByUser(officeName)
+        AppointmentService.fetchCompletedAppointmentsCountByUser(
+          officeName,
+          startDate,
+          endDate
+        )
       )
     );
     res.status(200).json(results);

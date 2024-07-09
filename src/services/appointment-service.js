@@ -474,12 +474,31 @@ async function fetchUnassignedAppointmentsInRange(startDate, endDate) {
     throw error;
   }
 }
-async function fetchCompletedAppointmentsCountByUser(officeName) {
+async function fetchCompletedAppointmentsCountByUser(
+  officeName,
+  startDate,
+  endDate
+) {
   try {
+    // Convert startDate and endDate to Date objects for comparison
+    const startDateISO = new Date(startDate).toISOString();
+    let endDateDate = new Date(endDate); // Use let instead of const for reassignment
+    endDateDate.setDate(endDateDate.getDate() + 1); // Move to the start of the next day
+    endDateDate.setHours(0, 0, 0, 0); // Reset time to 00:00:00.000, which is the start of the next day
+    const endDateISO = endDateDate.toISOString(); // Now assign the ISO string to a new constant variable
+
     const appointments = await Appointment.aggregate([
       { $match: { officeName: officeName } }, // Filter by officeName to reduce the dataset
       { $unwind: "$appointments" }, // Flatten the appointments array
-      { $match: { "appointments.completionStatus": "Completed" } }, // Filter for completed appointments
+      {
+        $match: {
+          "appointments.completionStatus": "Completed",
+          "appointments.appointmentDate": {
+            $gte: new Date(startDateISO),
+            $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
+          },
+        },
+      }, // Filter for completed appointments
       { $group: { _id: "$appointments.assignedUser", count: { $sum: 1 } } }, // Group by assignedUser and count
     ]);
 
