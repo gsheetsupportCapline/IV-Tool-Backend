@@ -135,13 +135,14 @@ async function fetchDataAndStoreAppointments() {
 async function fetchDataForSpecificOffice(officeName) {
   try {
     const response = await AppointmentRepository.getDataForOffice(officeName);
-    console.log("response  a", response);
+    // console.log("response  a", response);
     const officeData = response[0].appointments;
     const result = [];
-    console.log("office data", officeData);
+    // console.log("office data", officeData);
     officeData.forEach((appointmentData) => {
       // Extract relevant information
       const appointmentDate = appointmentData.appointmentDate;
+      const appointmentDateString = appointmentDate.toISOString().split("T")[0]; // Splits the ISO string and takes the date part
       const patientId = appointmentData.patientId;
       const patientName = appointmentData.patientName;
       const insuranceName = appointmentData.insuranceName;
@@ -169,21 +170,25 @@ async function fetchDataForSpecificOffice(officeName) {
       const ivRemarks = appointmentData.ivRemarks;
       const source = appointmentData.source;
 
-      const appointmentTime = `${appointmentData.appointmentDate
+      const timeZoneOffset = 5.5; // Example timezone offset for IST (Indian Standard Time)
+      let localAppointmentDate = new Date(
+        appointmentDate.getTime() + timeZoneOffset * 60 * 60 * 1000
+      ); // Convert to local time by adding the offset
+
+      // Extract hours, minutes, and seconds from the adjusted local appointment date
+      const hours = localAppointmentDate
         .getUTCHours()
         .toString()
-        .padStart(2, "0")}:${appointmentData.appointmentDate
-        .getUTCMinutes()
-        .toString()
-        .padStart(2, "0")}:${appointmentData.appointmentDate
-        .getUTCSeconds()
-        .toString()
-        .padStart(2, "0")}`;
+        .padStart(2, "0");
+      const minutes = "30"; // Fixed minutes as per your requirement
+      const seconds = "00"; // Assuming seconds are not significant for this conversion
+      const appointmentTime = `${hours}:${minutes}:${seconds}`;
+
       // Push the appointment object into the result array
       result.push({
         _id: _id,
         office: office,
-        appointmentDate: appointmentDate,
+        appointmentDate: appointmentDateString,
         patientId: patientId,
         patientName: patientName,
         insuranceName: insuranceName,
@@ -469,6 +474,34 @@ async function fetchUnassignedAppointmentsInRange(startDate, endDate) {
     throw error;
   }
 }
+async function fetchCompletedAppointmentsCountByUser(officeName) {
+  try {
+    const appointments = await Appointment.aggregate([
+      { $match: { officeName: officeName } }, // Filter by officeName to reduce the dataset
+      { $unwind: "$appointments" }, // Flatten the appointments array
+      { $match: { "appointments.completionStatus": "Completed" } }, // Filter for completed appointments
+      { $group: { _id: "$appointments.assignedUser", count: { $sum: 1 } } }, // Group by assignedUser and count
+    ]);
+
+    console.log("Aggregation Result:", appointments);
+
+    if (appointments.length === 0) {
+      console.log(`No completed appointments found for office: ${officeName}`);
+      return { office: officeName, completedCount: [] };
+    }
+
+    const completedCount = appointments.map((appointment) => ({
+      userId: appointment._id,
+
+      count: appointment.count,
+    }));
+
+    return { office: officeName, completedCount };
+  } catch (error) {
+    console.error("Error fetching completed appointments:", error);
+    throw error;
+  }
+}
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -478,4 +511,5 @@ module.exports = {
   updateIndividualAppointmentDetails,
   getAssignedCountsByOffice,
   fetchUnassignedAppointmentsInRange,
+  fetchCompletedAppointmentsCountByUser,
 };

@@ -39,10 +39,14 @@ router.get(
   AppointmentController.getAssignedCounts
 );
 
-// In appointment-routes.js
 router.get(
   "/fetch-unassigned-appointments",
   AppointmentController.fetchUnassignedAppointmentsInRange
+);
+
+router.get(
+  "/completed-appointments",
+  AppointmentController.fetchCompletedAppointmentsByOffice
 );
 
 module.exports = router;

@@ -119,8 +119,27 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
         startDate,
         endDate
       );
-    // console.log("Appointments", appointments);
+    console.log("Appointments", appointments);
     res.status(200).json(appointments);
+  } catch (error) {
+    console.log("Error at Controller layer");
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const fetchCompletedAppointmentsByOffice = async (req, res) => {
+  try {
+    const offices = [
+      "Aransas",
+      "Azle",
+      "Beaumont" /* Add all other office names here */,
+    ];
+    const results = await Promise.all(
+      offices.map((officeName) =>
+        AppointmentService.fetchCompletedAppointmentsCountByUser(officeName)
+      )
+    );
+    res.status(200).json(results);
   } catch (error) {
     console.log("Error at Controller layer");
     res.status(500).json({ message: error.message });
@@ -136,4 +155,5 @@ module.exports = {
   updateIndividualAppointmentDetails,
   getAssignedCounts,
   fetchUnassignedAppointmentsInRange,
+  fetchCompletedAppointmentsByOffice,
 };
