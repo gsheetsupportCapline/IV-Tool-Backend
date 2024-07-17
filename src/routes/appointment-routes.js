@@ -49,4 +49,9 @@ router.get(
   AppointmentController.fetchCompletedAppointmentsByOffice
 );
 
+router.get(
+  "/appointments-by-office-and-remarks",
+  AppointmentController.getAppointmentsByOfficeAndRemarks
+);
+
 module.exports = router;

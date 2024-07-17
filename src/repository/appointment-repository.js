@@ -132,9 +132,99 @@ async function getAssignedCountsByOffice(officeName) {
   }
 }
 
+async function fetchAppointmentsByOfficeAndRemarks(
+  officeName,
+  startDate,
+  endDate,
+  remarks
+) {
+  try {
+    const startDateISO = new Date(startDate).toISOString();
+    let endDateDate = new Date(endDate);
+    endDateDate.setDate(endDateDate.getDate() + 1); // Include the end date in the range
+    endDateDate.setHours(0, 0, 0, 0); // Reset time to start of the next day
+    const endDateISO = endDateDate.toISOString();
+    console.log("remarks", remarks);
+    const appointments = await Appointment.aggregate([
+      { $match: { officeName: officeName } },
+      { $unwind: "$appointments" },
+      {
+        $match: {
+          $and: [
+            {
+              "appointments.appointmentDate": {
+                $gte: new Date(startDateISO),
+                $lt: new Date(endDateISO),
+              },
+            },
+            {
+              $or: [
+                { "appointments.ivRemarks": { $in: remarks } },
+                { "appointments.ivRemarks": { $exists: false } },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: "$appointments._id",
+          appointment: { $first: "$appointments" },
+          officeName: { $first: "$officeName" },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $mergeObjects: ["$$ROOT", "$appointment"] },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          appointmentType: 1,
+          appointmentDate: 1,
+          appointmentTime: 1,
+          patientId: 1,
+          patientName: 1,
+          patientDOB: 1,
+          insuranceName: 1,
+          insurancePhone: 1,
+          policyHolderName: 1,
+          policyHolderDOB: 1,
+          memberId: 1,
+          employerName: 1,
+          groupNumber: 1,
+          relationWithPatient: 1,
+          medicaidId: 1,
+          carrierId: 1,
+          confirmationStatus: 1,
+          cellPhone: 1,
+          homePhone: 1,
+          workPhone: 1,
+          ivType: 1,
+          completionStatus: 1,
+          status: 1,
+          assignedUser: 1,
+          provider: 1,
+          office: "$officeName",
+          ivRemarks: 1,
+          _id: "$appointment._id",
+        },
+      },
+    ]);
+
+    return appointments;
+  } catch (error) {
+    console.error(
+      `Error fetching appointments by office and remarks: ${error}`
+    );
+    throw error;
+  }
+}
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
   updateAppointmentInArray,
   getAssignedCountsByOffice,
+  fetchAppointmentsByOfficeAndRemarks,
 };

@@ -177,6 +177,69 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
   }
 };
 
+const getAppointmentsByOfficeAndRemarks = async (req, res) => {
+  try {
+    const { officeName, startDate, endDate } = req.query;
+    const remarks = [
+      "Appt Cancelled",
+      "Discounted Plan",
+      "Benefit maxed out as per ES",
+      "Dependent not enrolled",
+      "Future activation date",
+      "Inactive",
+      "Ineligible",
+      "Maxed Out",
+      "Medicaid IVs (Day Team)",
+      "Medicaid IVs for Future Dates (Day Team)",
+      "Medical Policy",
+      "Missing Insurance Details",
+      "No Dental Coverage",
+      "No OON Benefits",
+      "No OS Benefits",
+      "Not able to contact with rep",
+      "Not assigned to our office",
+      "Not Found over Call",
+      "office Closed",
+      "Only Ortho IV required as per ofc",
+      "Only OS IV required as per ofc",
+      "OS Patient",
+      "Indemnity plan",
+      "Rep denied to provide info",
+      "Repeated",
+      "Rush not Accepted",
+      "Terminated",
+      "Unable to retrive information",
+      "Wrong information",
+      "Provider not available on Provider Schedule",
+      "Not Found over web, Night IV need to call",
+      "Not found on web and call",
+      "Not accepting HMO patient",
+      "Missing Insurance Details, No info ES",
+      "Ortho/OS Provider on Scheduler",
+      "IV Return - TX on Exchange above 18 years",
+      "Office Is closed for the day, Patient need to reschedule.",
+      "Faxback Attached in Drive",
+      "Completed, Not assigned to Facility",
+      "Technical Issue - Not received OTP/Fax",
+      "Unable to check Provider/Facility Status",
+      "Updated ES, IV has not created",
+      "IV not created, Email sent for benefits",
+    ];
+    const appointments =
+      await AppointmentService.getAppointmentsByOfficeAndRemarks(
+        officeName,
+        startDate,
+        endDate,
+        remarks
+      );
+    console.log("Appointments", appointments);
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -187,4 +250,5 @@ module.exports = {
   getAssignedCounts,
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsByOffice,
+  getAppointmentsByOfficeAndRemarks,
 };

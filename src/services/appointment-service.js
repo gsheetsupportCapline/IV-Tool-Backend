@@ -521,6 +521,31 @@ async function fetchCompletedAppointmentsCountByUser(
     throw error;
   }
 }
+
+async function getAppointmentsByOfficeAndRemarks(
+  officeName,
+  startDate,
+  endDate,
+  remarks
+) {
+  try {
+    const appointments =
+      await AppointmentRepository.fetchAppointmentsByOfficeAndRemarks(
+        officeName,
+        startDate,
+        endDate,
+        remarks
+      );
+    return appointments;
+  } catch (error) {
+    console.error(
+      "Error at service layer in getAppointmentsByOfficeAndRemarks:",
+      error
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -531,4 +556,5 @@ module.exports = {
   getAssignedCountsByOffice,
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsCountByUser,
+  getAppointmentsByOfficeAndRemarks,
 };
