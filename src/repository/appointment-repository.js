@@ -182,7 +182,9 @@ async function fetchAppointmentsByOfficeAndRemarks(
         $project: {
           _id: 0,
           appointmentType: 1,
-          appointmentDate: 1,
+          appointmentDate: {
+            $dateToString: { format: "%Y-%m-%d", date: "$appointmentDate" },
+          },
           appointmentTime: 1,
           patientId: 1,
           patientName: 1,
