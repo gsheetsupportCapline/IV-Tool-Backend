@@ -51,8 +51,18 @@ async function fetchDataByOffice(officeName) {
 
 async function getDataForOffice(officeName) {
   try {
-    const appointmentData = await Appointment.find({ officeName: officeName });
-    console.log("appointments", appointmentData);
+    let query = {};
+    if (officeName === "AllOffices") {
+      // Special case: Fetch all appointments if officeName is "AllOffice"
+      const appointmentData = await Appointment.find({});
+      // console.log("appointments All offices", appointmentData);
+      return appointmentData;
+    } else if (officeName) {
+      // Regular case: Filter by officeName if it's not empty after trimming
+      query.officeName = officeName;
+    }
+    const appointmentData = await Appointment.find(query);
+    // console.log("appointments", appointmentData);
     return appointmentData;
   } catch (error) {
     console.error(`Error fetching for ${officeName} at Repository layer`);

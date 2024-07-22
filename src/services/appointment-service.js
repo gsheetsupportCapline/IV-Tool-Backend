@@ -136,84 +136,93 @@ async function fetchDataForSpecificOffice(officeName) {
   try {
     const response = await AppointmentRepository.getDataForOffice(officeName);
     // console.log("response  a", response);
-    const officeData = response[0].appointments;
+    // const officeData = response[0].appointments;
+
     const result = [];
-    // console.log("office data", officeData);
-    officeData.forEach((appointmentData) => {
-      // Extract relevant information
-      const appointmentDate = appointmentData.appointmentDate;
-      const appointmentDateString = appointmentDate.toISOString().split("T")[0]; // Splits the ISO string and takes the date part
-      const patientId = appointmentData.patientId;
-      const patientName = appointmentData.patientName;
-      const insuranceName = appointmentData.insuranceName;
-      const insurancePhone = appointmentData.insurancePhone;
-      const policyHolderName = appointmentData.policyHolderName;
-      const policyHolderDOB = appointmentData.policyHolderDOB;
-      const appointmentType = appointmentData.appointmentType; // chair name
-      const memberId = appointmentData.memberId;
-      const employerName = appointmentData.employerName;
-      const groupNumber = appointmentData.groupNumber;
-      const relationWithPatient = appointmentData.relationWithPatient;
-      const medicaidId = appointmentData.medicaidId;
-      const carrierId = appointmentData.carrierId;
-      const confirmationStatus = appointmentData.confirmationStatus;
-      const cellPhone = appointmentData.cellPhone;
-      const homePhone = appointmentData.homePhone;
-      const workPhone = appointmentData.workPhone;
-      const ivType = appointmentData.ivType;
-      const status = appointmentData.status;
-      const assignedUser = appointmentData.assignedUser;
-      const completionStatus = appointmentData.completionStatus;
-      const office = officeName;
-      const _id = appointmentData._id;
-      const planType = appointmentData.planType;
-      const ivRemarks = appointmentData.ivRemarks;
-      const source = appointmentData.source;
 
-      const timeZoneOffset = 5.5; // Example timezone offset for IST (Indian Standard Time)
-      let localAppointmentDate = new Date(
-        appointmentDate.getTime() + timeZoneOffset * 60 * 60 * 1000
-      ); // Convert to local time by adding the offset
+    response.forEach((doc) => {
+      const officeName = doc.officeName;
+      const officeData = doc.appointments;
+      officeData.forEach((appointmentData) => {
+        // Extract relevant information
+        const appointmentDate = appointmentData.appointmentDate;
+        const appointmentDateString = appointmentDate
+          .toISOString()
+          .split("T")[0]; // Splits the ISO string and takes the date part
+        const patientId = appointmentData.patientId;
+        const patientName = appointmentData.patientName;
+        const insuranceName = appointmentData.insuranceName;
+        const insurancePhone = appointmentData.insurancePhone;
+        const policyHolderName = appointmentData.policyHolderName;
+        const policyHolderDOB = appointmentData.policyHolderDOB;
+        const appointmentType = appointmentData.appointmentType; // chair name
+        const memberId = appointmentData.memberId;
+        const employerName = appointmentData.employerName;
+        const groupNumber = appointmentData.groupNumber;
+        const relationWithPatient = appointmentData.relationWithPatient;
+        const medicaidId = appointmentData.medicaidId;
+        const carrierId = appointmentData.carrierId;
+        const confirmationStatus = appointmentData.confirmationStatus;
+        const cellPhone = appointmentData.cellPhone;
+        const homePhone = appointmentData.homePhone;
+        const workPhone = appointmentData.workPhone;
+        const ivType = appointmentData.ivType;
+        const status = appointmentData.status;
+        const assignedUser = appointmentData.assignedUser;
+        const completionStatus = appointmentData.completionStatus;
+        // const office = appointmentData.office;
+        const _id = appointmentData._id;
+        const planType = appointmentData.planType;
+        const ivRemarks = appointmentData.ivRemarks;
+        const source = appointmentData.source;
 
-      // Extract hours, minutes, and seconds from the adjusted local appointment date
-      const hours = localAppointmentDate
-        .getUTCHours()
-        .toString()
-        .padStart(2, "0");
-      const minutes = "30"; // Fixed minutes as per your requirement
-      const seconds = "00"; // Assuming seconds are not significant for this conversion
-      const appointmentTime = `${hours}:${minutes}:${seconds}`;
+        // const timeZoneOffset = 5.5; // Example timezone offset for IST (Indian Standard Time)
+        // let localAppointmentDate = new Date(
+        //   appointmentDate.getTime() + timeZoneOffset * 60 * 60 * 1000
+        // ); // Convert to local time by adding the offset
 
-      // Push the appointment object into the result array
-      result.push({
-        _id: _id,
-        office: office,
-        appointmentDate: appointmentDateString,
-        patientId: patientId,
-        patientName: patientName,
-        insuranceName: insuranceName,
-        insurancePhone: insurancePhone,
-        policyHolderName: policyHolderName,
-        policyHolderDOB: policyHolderDOB,
-        appointmentType: appointmentType,
-        memberId: memberId,
-        employerName: employerName,
-        groupNumber: groupNumber,
-        relationWithPatient: relationWithPatient,
-        medicaidId: medicaidId,
-        carrierId: carrierId,
-        confirmationStatus: confirmationStatus,
-        cellPhone: cellPhone,
-        homePhone: homePhone,
-        workPhone: workPhone,
-        ivType: ivType,
-        status: status,
-        assignedUser: assignedUser,
-        completionStatus: completionStatus,
-        appointmentTime: appointmentTime,
-        ivRemarks: ivRemarks,
-        planType: planType,
-        source: source,
+        //  Extract hours, minutes, and seconds from the adjusted local appointment date
+        // const hours = localAppointmentDate
+        //   .getUTCHours()
+        //   .toString()
+        //   .padStart(2, "0");
+        // const minutes = "30"; // Fixed minutes as per your requirement
+        // const seconds = "00"; // Assuming seconds are not significant for this conversion
+        // const appointmentTime = `${hours}:${minutes}:${seconds}`;
+
+        const appointmentTime = appointmentData.appointmentTime;
+
+        // Push the appointment object into the result array
+        result.push({
+          _id: _id,
+          office: officeName,
+          appointmentDate: appointmentDateString,
+          patientId: patientId,
+          patientName: patientName,
+          insuranceName: insuranceName,
+          insurancePhone: insurancePhone,
+          policyHolderName: policyHolderName,
+          policyHolderDOB: policyHolderDOB,
+          appointmentType: appointmentType,
+          memberId: memberId,
+          employerName: employerName,
+          groupNumber: groupNumber,
+          relationWithPatient: relationWithPatient,
+          medicaidId: medicaidId,
+          carrierId: carrierId,
+          confirmationStatus: confirmationStatus,
+          cellPhone: cellPhone,
+          homePhone: homePhone,
+          workPhone: workPhone,
+          ivType: ivType,
+          status: status,
+          assignedUser: assignedUser,
+          completionStatus: completionStatus,
+          appointmentTime: appointmentTime,
+          ivRemarks: ivRemarks,
+          planType: planType,
+          source: source,
+        });
       });
     });
 
