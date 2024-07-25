@@ -118,6 +118,7 @@ async function getAssignedCountsByOffice(officeName) {
       { $match: { officeName: officeName } },
       { $unwind: "$appointments" }, // Flatten the appointments array
       { $match: { "appointments.status": "Assigned" } }, // Now filter based on the unwound appointments
+      { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
       {
         $group: {
           _id: "$appointments.assignedUser", // Group by assignedUser within appointments

@@ -181,7 +181,7 @@ async function fetchDataForSpecificOffice(officeName) {
         //   appointmentDate.getTime() + timeZoneOffset * 60 * 60 * 1000
         // ); // Convert to local time by adding the offset
 
-        //  Extract hours, minutes, and seconds from the adjusted local appointment date
+        // Extract hours, minutes, and seconds from the adjusted local appointment date
         // const hours = localAppointmentDate
         //   .getUTCHours()
         //   .toString()
@@ -309,6 +309,7 @@ async function fetchUserAppointments(userId) {
       { $match: { "appointments.assignedUser": userId } }, // Filter documents where assignedUser matches userId
       { $unwind: "$appointments" }, // Deconstruct the appointments array
       { $match: { "appointments.assignedUser": userId } }, // Re-filter to ensure only matching appointments are included
+      { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
       { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
 
       {
