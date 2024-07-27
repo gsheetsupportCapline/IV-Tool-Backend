@@ -2,10 +2,17 @@
 const mongoose = require("mongoose");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
-
 async function fetchDataAndStoreAppointments() {
   try {
-    // Array of office names
+    const currentDate = new Date();
+    const startDate = new Date(
+      currentDate.setMonth(currentDate.getMonth() - 2)
+    ); // Start date: 2 months ago
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 15); // End date: current date + 15 days
+    console.log("Start Date", startDate);
+
+    console.log("End Date ", endDate);
     const officeNames = [
       "Aransas",
       "Azle",
@@ -38,92 +45,85 @@ async function fetchDataAndStoreAppointments() {
       "Winnie",
     ];
 
-    // Iterate over each office
     for (const officeName of officeNames) {
       const response = await AppointmentRepository.fetchDataByOffice(
         officeName
       );
-      // console.log("Response :", response);
       const appointmentsData = response.data;
-      const result = [];
 
-      // const formattedAppointments = appointmentsData.map((appointmentData) => ({
-      //   officeName: officeName,
-      //   appointments: [
-      //     {
-      //       appointmentDate: new Date(appointmentData.c5),
-      //       patientID: appointmentData.c1,
-      //     },
-      //   ],
-      // }));
+      const appointments = appointmentsData
+        .map((appointmentData) => {
+          const appointmentDate = new Date(appointmentData.c5);
+          if (appointmentDate < startDate || appointmentDate > endDate)
+            return null; // Skip out-of-range appointments
 
-      appointmentsData.forEach((appointmentData) => {
-        // Extract relevant information
+          const hours = appointmentDate.getHours().toString().padStart(2, "0");
+          const minutes = appointmentDate
+            .getMinutes()
+            .toString()
+            .padStart(2, "0");
+          const seconds = appointmentDate
+            .getSeconds()
+            .toString()
+            .padStart(2, "0");
+          const appointmentTime = `${hours}:${minutes}:${seconds}`;
 
-        const appointmentDate = new Date(appointmentData.c5);
-        const hours = appointmentDate.getHours().toString().padStart(2, "0"); // Ensure two digits for hours
-        const minutes = appointmentDate
-          .getMinutes()
-          .toString()
-          .padStart(2, "0"); // Ensure two digits for minutes
-        const seconds = appointmentDate
-          .getSeconds()
-          .toString()
-          .padStart(2, "0"); // Ensure two digits for seconds
-        const appointmentTime = `${hours}:${minutes}:${seconds}`;
+          return {
+            appointmentDate: appointmentDate,
+            appointmentTime: appointmentTime,
+            patientId: appointmentData.c1,
+            patientName: `${appointmentData.c12} ${appointmentData.c13}`,
+            insuranceName: appointmentData.c7,
+            insurancePhone: appointmentData.c8,
+            policyHolderName: appointmentData.c2,
+            policyHolderDOB: appointmentData.c4,
+            appointmentType: appointmentData.c6,
+            memberId: appointmentData.c9,
+            employerName: appointmentData.c10,
+            groupNumber: appointmentData.c11,
+            relationWithPatient: appointmentData.c3,
+            medicaidId: appointmentData.c14,
+            carrierId: appointmentData.c15,
+            confirmationStatus: appointmentData.c16,
+            cellPhone: appointmentData.c17,
+            homePhone: appointmentData.c18,
+            workPhone: appointmentData.c19,
+            patientDOB: appointmentData.c20,
+          };
+        })
+        .filter((appointment) => appointment !== null); // Remove nulls for out-of-range appointments
 
-        const patientId = appointmentData.c1;
-        const patientName = `${appointmentData.c12} ${appointmentData.c13}`;
-        const insuranceName = appointmentData.c7;
-        const insurancePhone = appointmentData.c8;
-        const policyHolderName = appointmentData.c2;
-        const policyHolderDOB = appointmentData.c4;
-        const appointmentType = appointmentData.c6; // chair name
-        const memberId = appointmentData.c9;
-        const employerName = appointmentData.c10;
-        const groupNumber = appointmentData.c11;
-        const relationWithPatient = appointmentData.c3;
-        const medicaidId = appointmentData.c14;
-        const carrierId = appointmentData.c15;
-        const confirmationStatus = appointmentData.c16;
-        const cellPhone = appointmentData.c17;
-        const homePhone = appointmentData.c18;
-        const workPhone = appointmentData.c19;
-        const patientDOB = appointmentData.c20;
+      let officeDoc = await Appointment.findOne({ officeName: officeName });
 
-        // Push the appointment object into the result array
-        result.push({
-          appointmentDate: appointmentDate,
-          appointmentTime: appointmentTime,
-          patientId: patientId,
-          patientName: patientName,
-          insuranceName: insuranceName,
-          insurancePhone: insurancePhone,
-          policyHolderName: policyHolderName,
-          policyHolderDOB: policyHolderDOB,
-          appointmentType: appointmentType,
-          memberId: memberId,
-          employerName: employerName,
-          groupNumber: groupNumber,
-          relationWithPatient: relationWithPatient,
-          medicaidId: medicaidId,
-          carrierId: carrierId,
-          confirmationStatus: confirmationStatus,
-          cellPhone: cellPhone,
-          homePhone: homePhone,
-          workPhone: workPhone,
-          patientDOB: patientDOB,
+      if (!officeDoc) {
+        officeDoc = new Appointment({
+          officeName: officeName,
+          appointments: appointments,
         });
-      });
-      // console.log(result);
-      // Bulk insert appointments for the office
-      // await Appointment.insertMany(formattedAppointments);
 
-      const appointmentDoc = await Appointment.findOneAndUpdate(
-        { officeName: officeName },
-        { officeName: officeName, appointments: result },
-        { upsert: true, new: true }
-      );
+        await officeDoc.save();
+      } else {
+        for (const newAppointment of appointments) {
+          const existingAppointmentIndex = appointments.findIndex(
+            (appointment) =>
+              appointment.patientId === newAppointment.patientId &&
+              appointment.appointmentDate === newAppointment.appointmentDate &&
+              appointment.appointmentTime === newAppointment.appointmentTime
+          );
+
+          if (existingAppointmentIndex === -1) {
+            officeDoc.appointments.push(newAppointment);
+          }
+        }
+
+        // Remove out-of-range appointments
+        officeDoc.appointments = officeDoc.appointments.filter(
+          (appointment) =>
+            appointment.appointmentDate >= startDate &&
+            appointment.appointmentDate <= endDate
+        );
+        await officeDoc.save();
+      }
     }
   } catch (error) {
     console.log("Error at Service Layer");
