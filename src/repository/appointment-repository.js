@@ -221,6 +221,7 @@ async function fetchAppointmentsByOfficeAndRemarks(
           provider: 1,
           office: "$officeName",
           ivRemarks: 1,
+          planType: 1,
           _id: "$appointment._id",
         },
       },
