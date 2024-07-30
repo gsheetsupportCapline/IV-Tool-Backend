@@ -58,7 +58,7 @@ async function getDataForOffice(officeName) {
       // console.log("appointments All offices", appointmentData);
       return appointmentData;
     } else if (officeName) {
-      // Regular case: Filter by officeName if it's not empty after trimming
+      // Regular case: Filter by officeName
       query.officeName = officeName;
     }
     const appointmentData = await Appointment.find(query);
