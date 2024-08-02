@@ -126,7 +126,7 @@ async function fetchDataAndStoreAppointments() {
       }
     }
   } catch (error) {
-    console.log("Error at Service Layer");
+    console.log("Error at Service Layer fetchDataAndStoreAppointments");
     console.error("Error fetching and storing data:", error);
     throw error;
   }
@@ -228,7 +228,9 @@ async function fetchDataForSpecificOffice(officeName) {
 
     return result;
   } catch (error) {
-    console.log("Error at Service Layer in function ");
+    console.log(
+      "Error at Service Layer in function fetchDataForSpecificOffice"
+    );
     console.error("Error fetching and storing data:", error);
     throw error;
   }
@@ -267,6 +269,8 @@ async function updateAppointmentInArray(
     console.log("Updated Appointment", updatedAppointment);
     return updatedAppointment;
   } catch (error) {
+    console.log("Error at Service Layer in function updateAppointmentInArray");
+
     throw error;
   }
 }
@@ -298,7 +302,7 @@ async function createNewRushAppointment(officeName, data) {
     }
     return result;
   } catch (error) {
-    console.error("Error creating new appointment :", error);
+    console.error("Error at service layer creating new appointment :", error);
     throw error;
   }
 }
@@ -365,7 +369,7 @@ async function fetchUserAppointments(userId) {
 
     return appointments;
   } catch (error) {
-    console.error("Error fetching user appointments:", error);
+    console.error("Error at service layer fetching user appointments:", error);
     throw error;
   }
 }
@@ -414,7 +418,10 @@ async function updateIndividualAppointmentDetails(
     // Optionally, return the updated document or a success message
     return updateResult;
   } catch (error) {
-    console.error("Error updating individual appointment details:", error);
+    console.error(
+      "Error at service layer updating individual appointment details:",
+      error
+    );
     throw error;
   }
 }
@@ -480,7 +487,10 @@ async function fetchUnassignedAppointmentsInRange(startDate, endDate) {
 
     return appointments;
   } catch (error) {
-    console.error("Error fetching unassigned appointments:", error);
+    console.error(
+      "Error at service layer fetching unassigned appointments:",
+      error
+    );
     throw error;
   }
 }
@@ -527,7 +537,10 @@ async function fetchCompletedAppointmentsCountByUser(
 
     return { office: officeName, completedCount };
   } catch (error) {
-    console.error("Error fetching completed appointments:", error);
+    console.error(
+      "Error at service layer fetching completed appointments:",
+      error
+    );
     throw error;
   }
 }

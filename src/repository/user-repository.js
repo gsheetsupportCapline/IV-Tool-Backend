@@ -6,7 +6,9 @@ const userRepository = {
       const user = new User(data);
       return await user.save();
     } catch (error) {
-      console.log("Something went wrong in the user - repository layer");
+      console.log(
+        "Something went wrong in the create - userRepository repository layer"
+      );
       throw error;
     }
   },
@@ -17,6 +19,9 @@ const userRepository = {
       console.log("response ky arha ", response);
       return response;
     } catch (error) {
+      console.log(
+        "Something went wrong in the findBy - userRepository repository layer"
+      );
       throw error;
     }
   },
@@ -25,6 +30,9 @@ const userRepository = {
     try {
       return await User.find({});
     } catch (error) {
+      console.log(
+        "Something went wrong in the findAll - userRepository repository layer"
+      );
       throw error;
     }
   },

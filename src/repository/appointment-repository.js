@@ -44,7 +44,9 @@ async function fetchDataByOffice(officeName) {
 
     return response.data;
   } catch (error) {
-    console.error(`Error fetching data for ${officeName} at Repository Layer`);
+    console.error(
+      `Error fetchDataByOffice - fetching data for ${officeName} at Repository Layer`
+    );
     throw error;
   }
 }
@@ -65,7 +67,9 @@ async function getDataForOffice(officeName) {
     // console.log("appointments", appointmentData);
     return appointmentData;
   } catch (error) {
-    console.error(`Error fetching for ${officeName} at Repository layer`);
+    console.error(
+      `Error getDataForOffice -fetching for ${officeName} at Repository layer`
+    );
     throw error;
   }
 }

@@ -7,7 +7,7 @@ const fetchAndSaveAppointments = async (req, res) => {
       .status(200)
       .json({ message: "Appointments fetched and saved succesfully" });
   } catch (error) {
-    console.log("Error at Controller layer");
+    console.log("Error at fetchAndSaveAppointments -Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
@@ -20,7 +20,7 @@ const fetchDataForSpecificOffice = async (req, res) => {
     );
     res.status(200).json({ appointments });
   } catch (error) {
-    console.log("Error at Controller layer");
+    console.log("Error at fetchDataForSpecificOffice- Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
@@ -41,6 +41,9 @@ const updateAppointmentInArray = async (req, res) => {
       );
     res.status(200).json(updatedAppointment);
   } catch (error) {
+    console.log(
+      "Error at updateAppointmentInArray- fetchDataForSpecificOffice- Controller layer"
+    );
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -57,7 +60,10 @@ const createNewRushAppointment = async (req, res) => {
       .status(201)
       .json({ message: "Appointment created successfully", result });
   } catch (error) {
-    console.error("Error creating new appointment", error);
+    console.error(
+      "Error  createNewRushAppointment creating new appointment at Controller layer",
+      error
+    );
     res.status(500).json({ message: error.message });
   }
 };
@@ -69,7 +75,7 @@ const fetchUserAppointments = async (req, res) => {
     console.log("Appointment response", appointments);
     res.status(200).json(appointments);
   } catch (error) {
-    console.log("Error at Controller layer");
+    console.log("Error at fetchUserAppointments -Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
@@ -93,7 +99,10 @@ const updateIndividualAppointmentDetails = async (req, res) => {
     console.error("Error updating individual appointment details:", error);
     res
       .status(500)
-      .send({ error: "Failed to update individual appointment details" });
+      .send({
+        error:
+          "Failed to update individual appointment details at Controller layer",
+      });
   }
 };
 
@@ -122,7 +131,9 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
     console.log("Appointments", appointments);
     res.status(200).json(appointments);
   } catch (error) {
-    console.log("Error at Controller layer");
+    console.log(
+      "Error at fetchUnassignedAppointmentsInRange -Controller layer"
+    );
     res.status(500).json({ message: error.message });
   }
 };
@@ -172,7 +183,9 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     );
     res.status(200).json(results);
   } catch (error) {
-    console.log("Error at Controller layer");
+    console.log(
+      "Error at fetchCompletedAppointmentsByOffice- Controller layer"
+    );
     res.status(500).json({ message: error.message });
   }
 };
@@ -235,7 +248,10 @@ const getAppointmentsByOfficeAndRemarks = async (req, res) => {
     console.log("Appointments", appointments);
     res.status(200).json(appointments);
   } catch (error) {
-    console.error("Error fetching appointments:", error);
+    console.error(
+      "Error getAppointmentsByOfficeAndRemarks at controller layer fetching appointments: ",
+      error
+    );
     res.status(500).json({ message: error.message });
   }
 };

@@ -9,7 +9,9 @@ const OfficeRepository = {
       });
       return office;
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log(
+        "Something went wrong in the OfficeRepository repository layer"
+      );
       throw { error };
     }
   },
@@ -19,7 +21,7 @@ const OfficeRepository = {
       await Office.deleteOne({ _id: officeId });
       return true;
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log("Something went wrong in the deleteOffice repository layer");
       throw { error };
     }
   },
@@ -34,7 +36,7 @@ const OfficeRepository = {
       await office.save(); // Save the changes to the database
       return office;
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log("Something went wrong in the updateOffice repository layer");
       throw { error };
     }
   },
@@ -44,7 +46,7 @@ const OfficeRepository = {
       const office = await Office.findById(officeId);
       return office;
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log("Something went wrong in the getOffice repository layer");
       throw { error };
     }
   },
@@ -54,7 +56,7 @@ const OfficeRepository = {
       const offices = await Office.find({});
       return offices;
     } catch (error) {
-      console.log("Something went wrong in the repository layer");
+      console.log("Something went wrong in the getAllOffices repository layer");
       throw { error };
     }
   },

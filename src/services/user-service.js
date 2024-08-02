@@ -6,7 +6,7 @@ const userService = {
       const user = await userRepository.create(data);
       return user;
     } catch (error) {
-      console.log("Something went wrong in the user - service layer");
+      console.log("Something went wrong in the sign user - service layer");
       throw error;
     }
   },
