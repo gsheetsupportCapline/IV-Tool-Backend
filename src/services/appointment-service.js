@@ -314,7 +314,7 @@ async function fetchUserAppointments(userId) {
       { $match: { "appointments.assignedUser": userId } }, // Filter documents where assignedUser matches userId
       { $unwind: "$appointments" }, // Deconstruct the appointments array
       { $match: { "appointments.assignedUser": userId } }, // Re-filter to ensure only matching appointments are included
-      { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
+      // { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
       { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
 
       {
@@ -380,7 +380,8 @@ async function updateIndividualAppointmentDetails(
   ivRemarks,
   source,
   planType,
-  completedBy
+  completedBy,
+  noteRemarks
 ) {
   try {
     const filter = {
@@ -395,6 +396,7 @@ async function updateIndividualAppointmentDetails(
         "appointments.$[elem].planType": planType,
         "appointments.$[elem].completionStatus": "Completed",
         "appointments.$[elem].completedBy": completedBy,
+        "appointments.$[elem].noteRemarks": noteRemarks,
       },
     };
 

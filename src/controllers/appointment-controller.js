@@ -82,8 +82,14 @@ const fetchUserAppointments = async (req, res) => {
 
 const updateIndividualAppointmentDetails = async (req, res) => {
   try {
-    const { appointmentId, ivRemarks, source, planType, completedBy } =
-      req.body;
+    const {
+      appointmentId,
+      ivRemarks,
+      source,
+      planType,
+      completedBy,
+      noteRemarks,
+    } = req.body;
 
     const updatedAppointment =
       await AppointmentService.updateIndividualAppointmentDetails(
@@ -91,18 +97,17 @@ const updateIndividualAppointmentDetails = async (req, res) => {
         ivRemarks,
         source,
         planType,
-        completedBy
+        completedBy,
+        noteRemarks
       );
 
     res.status(200).json(updatedAppointment);
   } catch (error) {
     console.error("Error updating individual appointment details:", error);
-    res
-      .status(500)
-      .send({
-        error:
-          "Failed to update individual appointment details at Controller layer",
-      });
+    res.status(500).send({
+      error:
+        "Failed to update individual appointment details at Controller layer",
+    });
   }
 };
 
