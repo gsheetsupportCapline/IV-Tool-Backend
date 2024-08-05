@@ -289,7 +289,7 @@ async function createNewRushAppointment(officeName, data) {
       MIDSSN: data.MIDSSN,
       insuranceName: data.insuranceName,
       insurancePhone: data.insurancePhone,
-      noteRemarks: data.noteRemarks,
+
       ivType: "Rush",
     };
 
