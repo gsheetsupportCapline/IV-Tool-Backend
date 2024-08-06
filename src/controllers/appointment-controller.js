@@ -89,6 +89,7 @@ const updateIndividualAppointmentDetails = async (req, res) => {
       planType,
       completedBy,
       noteRemarks,
+      completedDate,
     } = req.body;
 
     const updatedAppointment =
@@ -98,7 +99,8 @@ const updateIndividualAppointmentDetails = async (req, res) => {
         source,
         planType,
         completedBy,
-        noteRemarks
+        noteRemarks,
+        completedDate
       );
 
     res.status(200).json(updatedAppointment);
@@ -151,24 +153,21 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
       "Azle",
       "Beaumont",
       "Benbrook",
-      "Brodie",
       "Calallen",
       "Crosby",
       "Devine",
       "Elgin",
+      "Grangerland",
       "Huffman",
       "Jasper",
       "Lavaca",
       "Liberty",
-      "Lucas",
       "Lytle",
       "Mathis",
       "Potranco",
       "Rio Bravo",
       "Riverwalk",
       "Rockdale",
-      "Rockwall",
-      "San Mateo",
       "Sinton",
       "Splendora",
       "Springtown",
@@ -176,6 +175,7 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
       "Victoria",
       "Westgreen",
       "Winnie",
+      "OS",
     ];
     const results = await Promise.all(
       offices.map((officeName) =>

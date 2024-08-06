@@ -18,24 +18,21 @@ async function fetchDataAndStoreAppointments() {
       "Azle",
       "Beaumont",
       "Benbrook",
-      "Brodie",
       "Calallen",
       "Crosby",
       "Devine",
       "Elgin",
+      "Grangerland",
       "Huffman",
       "Jasper",
       "Lavaca",
       "Liberty",
-      "Lucas",
       "Lytle",
       "Mathis",
       "Potranco",
       "Rio Bravo",
       "Riverwalk",
       "Rockdale",
-      "Rockwall",
-      "San Mateo",
       "Sinton",
       "Splendora",
       "Springtown",
@@ -43,6 +40,7 @@ async function fetchDataAndStoreAppointments() {
       "Victoria",
       "Westgreen",
       "Winnie",
+      "OS",
     ];
 
     for (const officeName of officeNames) {
@@ -356,7 +354,11 @@ async function fetchUserAppointments(userId) {
           completionStatus: 1,
           status: 1,
           assignedUser: 1,
+          source: 1,
+          planType: 1,
+          ivRemarks: 1,
           provider: 1,
+          noteRemarks: 1,
           office: "$officeName", // Add officeName as a field named office
           _id: "$appointment._id", // Use the appointment's _id as the document's _id
         },
@@ -381,7 +383,8 @@ async function updateIndividualAppointmentDetails(
   source,
   planType,
   completedBy,
-  noteRemarks
+  noteRemarks,
+  completedDate
 ) {
   try {
     const filter = {
@@ -397,6 +400,7 @@ async function updateIndividualAppointmentDetails(
         "appointments.$[elem].completionStatus": "Completed",
         "appointments.$[elem].completedBy": completedBy,
         "appointments.$[elem].noteRemarks": noteRemarks,
+        "appointments.$[elem].completedDate": completedDate,
       },
     };
 
