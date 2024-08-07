@@ -79,7 +79,9 @@ async function updateAppointmentInArray(
   appointmentId,
   userId,
   status,
-  completionStatus
+  completionStatus,
+  ivAssignedDate,
+  ivAssignedByUserName
 ) {
   try {
     console.log("repository");
@@ -103,6 +105,9 @@ async function updateAppointmentInArray(
           [`appointments.${appointmentIndex}.status`]: status,
           [`appointments.${appointmentIndex}.completionStatus`]:
             completionStatus,
+          [`appointments.${appointmentIndex}.ivAssignedDate`]: ivAssignedDate,
+          [`appointments.${appointmentIndex}.ivAssignedByUserName`]:
+            ivAssignedByUserName,
         },
       }
     );

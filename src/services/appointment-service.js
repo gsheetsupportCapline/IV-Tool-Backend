@@ -239,7 +239,9 @@ async function updateAppointmentInArray(
   appointmentId,
   userId,
   status,
-  completionStatus
+  completionStatus,
+  ivAssignedDate,
+  ivAssignedByUserName
 ) {
   try {
     const result = await AppointmentRepository.updateAppointmentInArray(
@@ -247,7 +249,9 @@ async function updateAppointmentInArray(
       appointmentId,
       userId,
       status,
-      completionStatus
+      completionStatus,
+      ivAssignedDate,
+      ivAssignedByUserName
     );
     if (!result.matchedCount) {
       throw new Error("Appointment not found or no matching office");
@@ -384,7 +388,7 @@ async function updateIndividualAppointmentDetails(
   planType,
   completedBy,
   noteRemarks,
-  completedDate
+  ivCompletedDate
 ) {
   try {
     const filter = {
@@ -400,7 +404,7 @@ async function updateIndividualAppointmentDetails(
         "appointments.$[elem].completionStatus": "Completed",
         "appointments.$[elem].completedBy": completedBy,
         "appointments.$[elem].noteRemarks": noteRemarks,
-        "appointments.$[elem].completedDate": completedDate,
+        "appointments.$[elem].ivCompletedDate": ivCompletedDate,
       },
     };
 

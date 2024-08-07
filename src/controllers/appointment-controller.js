@@ -29,7 +29,13 @@ const updateAppointmentInArray = async (req, res) => {
   try {
     console.log("controller");
     const { officeName, appointmentId } = req.params;
-    const { userId, status, completionStatus } = req.body;
+    const {
+      userId,
+      status,
+      completionStatus,
+      ivAssignedDate,
+      ivAssignedByUserName,
+    } = req.body;
     console.log("officeName:", officeName, "appointmentId:", appointmentId);
     const updatedAppointment =
       await AppointmentService.updateAppointmentInArray(
@@ -37,7 +43,9 @@ const updateAppointmentInArray = async (req, res) => {
         appointmentId,
         userId,
         status,
-        completionStatus
+        completionStatus,
+        ivAssignedDate,
+        ivAssignedByUserName
       );
     res.status(200).json(updatedAppointment);
   } catch (error) {
@@ -89,7 +97,7 @@ const updateIndividualAppointmentDetails = async (req, res) => {
       planType,
       completedBy,
       noteRemarks,
-      completedDate,
+      ivCompletedDate,
     } = req.body;
 
     const updatedAppointment =
@@ -100,7 +108,7 @@ const updateIndividualAppointmentDetails = async (req, res) => {
         planType,
         completedBy,
         noteRemarks,
-        completedDate
+        ivCompletedDate
       );
 
     res.status(200).json(updatedAppointment);
