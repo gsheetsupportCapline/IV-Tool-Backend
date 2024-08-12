@@ -18,24 +18,21 @@ async function fetchDataAndStoreAppointments() {
       "Azle",
       "Beaumont",
       "Benbrook",
-      "Brodie",
       "Calallen",
       "Crosby",
       "Devine",
       "Elgin",
+      "Grangerland",
       "Huffman",
       "Jasper",
       "Lavaca",
       "Liberty",
-      "Lucas",
       "Lytle",
       "Mathis",
       "Potranco",
       "Rio Bravo",
       "Riverwalk",
       "Rockdale",
-      "Rockwall",
-      "San Mateo",
       "Sinton",
       "Splendora",
       "Springtown",
@@ -43,6 +40,7 @@ async function fetchDataAndStoreAppointments() {
       "Victoria",
       "Westgreen",
       "Winnie",
+      "OS",
     ];
 
     for (const officeName of officeNames) {
@@ -241,7 +239,9 @@ async function updateAppointmentInArray(
   appointmentId,
   userId,
   status,
-  completionStatus
+  completionStatus,
+  ivAssignedDate,
+  ivAssignedByUserName
 ) {
   try {
     const result = await AppointmentRepository.updateAppointmentInArray(
@@ -249,7 +249,9 @@ async function updateAppointmentInArray(
       appointmentId,
       userId,
       status,
-      completionStatus
+      completionStatus,
+      ivAssignedDate,
+      ivAssignedByUserName
     );
     if (!result.matchedCount) {
       throw new Error("Appointment not found or no matching office");
@@ -289,6 +291,7 @@ async function createNewRushAppointment(officeName, data) {
       MIDSSN: data.MIDSSN,
       insuranceName: data.insuranceName,
       insurancePhone: data.insurancePhone,
+
       ivType: "Rush",
     };
 
@@ -313,7 +316,7 @@ async function fetchUserAppointments(userId) {
       { $match: { "appointments.assignedUser": userId } }, // Filter documents where assignedUser matches userId
       { $unwind: "$appointments" }, // Deconstruct the appointments array
       { $match: { "appointments.assignedUser": userId } }, // Re-filter to ensure only matching appointments are included
-      { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
+      // { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
       { $sort: { "appointments.appointmentDate": -1 } }, // Sort appointments by date in descending order
 
       {
@@ -355,7 +358,11 @@ async function fetchUserAppointments(userId) {
           completionStatus: 1,
           status: 1,
           assignedUser: 1,
+          source: 1,
+          planType: 1,
+          ivRemarks: 1,
           provider: 1,
+          noteRemarks: 1,
           office: "$officeName", // Add officeName as a field named office
           _id: "$appointment._id", // Use the appointment's _id as the document's _id
         },
@@ -379,7 +386,9 @@ async function updateIndividualAppointmentDetails(
   ivRemarks,
   source,
   planType,
-  completedBy
+  completedBy,
+  noteRemarks,
+  ivCompletedDate
 ) {
   try {
     const filter = {
@@ -394,6 +403,8 @@ async function updateIndividualAppointmentDetails(
         "appointments.$[elem].planType": planType,
         "appointments.$[elem].completionStatus": "Completed",
         "appointments.$[elem].completedBy": completedBy,
+        "appointments.$[elem].noteRemarks": noteRemarks,
+        "appointments.$[elem].ivCompletedDate": ivCompletedDate,
       },
     };
 

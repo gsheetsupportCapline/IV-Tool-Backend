@@ -29,7 +29,13 @@ const updateAppointmentInArray = async (req, res) => {
   try {
     console.log("controller");
     const { officeName, appointmentId } = req.params;
-    const { userId, status, completionStatus } = req.body;
+    const {
+      userId,
+      status,
+      completionStatus,
+      ivAssignedDate,
+      ivAssignedByUserName,
+    } = req.body;
     console.log("officeName:", officeName, "appointmentId:", appointmentId);
     const updatedAppointment =
       await AppointmentService.updateAppointmentInArray(
@@ -37,7 +43,9 @@ const updateAppointmentInArray = async (req, res) => {
         appointmentId,
         userId,
         status,
-        completionStatus
+        completionStatus,
+        ivAssignedDate,
+        ivAssignedByUserName
       );
     res.status(200).json(updatedAppointment);
   } catch (error) {
@@ -82,8 +90,15 @@ const fetchUserAppointments = async (req, res) => {
 
 const updateIndividualAppointmentDetails = async (req, res) => {
   try {
-    const { appointmentId, ivRemarks, source, planType, completedBy } =
-      req.body;
+    const {
+      appointmentId,
+      ivRemarks,
+      source,
+      planType,
+      completedBy,
+      noteRemarks,
+      ivCompletedDate,
+    } = req.body;
 
     const updatedAppointment =
       await AppointmentService.updateIndividualAppointmentDetails(
@@ -91,18 +106,18 @@ const updateIndividualAppointmentDetails = async (req, res) => {
         ivRemarks,
         source,
         planType,
-        completedBy
+        completedBy,
+        noteRemarks,
+        ivCompletedDate
       );
 
     res.status(200).json(updatedAppointment);
   } catch (error) {
     console.error("Error updating individual appointment details:", error);
-    res
-      .status(500)
-      .send({
-        error:
-          "Failed to update individual appointment details at Controller layer",
-      });
+    res.status(500).send({
+      error:
+        "Failed to update individual appointment details at Controller layer",
+    });
   }
 };
 
@@ -146,24 +161,21 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
       "Azle",
       "Beaumont",
       "Benbrook",
-      "Brodie",
       "Calallen",
       "Crosby",
       "Devine",
       "Elgin",
+      "Grangerland",
       "Huffman",
       "Jasper",
       "Lavaca",
       "Liberty",
-      "Lucas",
       "Lytle",
       "Mathis",
       "Potranco",
       "Rio Bravo",
       "Riverwalk",
       "Rockdale",
-      "Rockwall",
-      "San Mateo",
       "Sinton",
       "Splendora",
       "Springtown",
@@ -171,6 +183,7 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
       "Victoria",
       "Westgreen",
       "Winnie",
+      "OS",
     ];
     const results = await Promise.all(
       offices.map((officeName) =>

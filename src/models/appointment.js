@@ -162,6 +162,24 @@ const appointmentSchema = new mongoose.Schema(
           required: false,
           default: null,
         },
+        ivRequestedDate: {
+          type: Date,
+        },
+        ivAssignedDate: {
+          type: Date,
+        },
+        ivCompletedDate: {
+          type: Date,
+        },
+        ivAssignedByUserName: {
+          type: String,
+          default: null,
+        },
+        noteRemarks: {
+          type: String,
+          default: null,
+          required: false,
+        },
       },
     ],
   },
