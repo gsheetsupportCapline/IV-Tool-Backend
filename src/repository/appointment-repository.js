@@ -13,35 +13,44 @@ async function fetchDataByOffice(officeName) {
     const startDate = `${
       twoMonthsAgo.getMonth() + 1
     }/${twoMonthsAgo.getDate()}/${twoMonthsAgo.getFullYear()}`;
-    // const endDate = `${
-    //   currentDate.getMonth() + 1
-    // }/${currentDate.getDate() + 15}/${currentDate.getFullYear()}`;
-
+    
     let endDate;
     const daysToAdd = 15;
 
-    // Calculate the end date safely, considering the possibility of exceeding the month's days
+    
     currentDate.setDate(currentDate.getDate() + daysToAdd);
     const endMonth = currentDate.getMonth() + 1; // Months are zero-based in JavaScript
     const endDay = currentDate.getDate();
     const endYear = currentDate.getFullYear();
 
-    // Format the end date correctly
+  
     endDate = `${endMonth < 10 ? "0" + endMonth : endMonth}/${
       endDay < 10 ? "0" + endDay : endDay
     }/${endYear}`;
+
+      console.log("Start Date ", startDate);
+      console.log("End Date ",endDate);
+   
 
     const response = await axios.get(ES_URL, {
       params: {
         office: officeName,
         password: "134568",
-        query: `from patient,appointment,chairs,patient_letter,employer,insurance_company Where  patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND patient_letter.patient_id=appointment.patient_id AND employer.employer_id=patient.prim_employer_id AND employer.insurance_company_id=insurance_company.insurance_company_id AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
+         query: `from patient,appointment,chairs,patient_letter,employer,insurance_company Where  patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND patient_letter.patient_id=appointment.patient_id AND employer.employer_id=patient.prim_employer_id AND employer.insurance_company_id=insurance_company.insurance_company_id AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
+ 
         selectcolumns:
           "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date",
         columnCount: "20",
+        
       },
     });
 
+    
+    // console.log("Full query:", response.config.url);
+    // console.log("Query parameters:", response.config.params);
+
+console.log("fetching response");
+console.log(`Number of objects returned for office "${officeName}": ${response.data.data.length}`);
     return response.data;
   } catch (error) {
     console.error(
@@ -63,6 +72,7 @@ async function getDataForOffice(officeName) {
       // Regular case: Filter by officeName
       query.officeName = officeName;
     }
+  
     const appointmentData = await Appointment.find(query);
     // console.log("appointments", appointmentData);
     return appointmentData;
