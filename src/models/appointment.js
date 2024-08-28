@@ -180,10 +180,7 @@ const appointmentSchema = new mongoose.Schema(
           default: null,
           required: false,
         },
-        modified: {
-          type:Boolean,
-          default :false
-        }
+       
       },
     ],
   },
