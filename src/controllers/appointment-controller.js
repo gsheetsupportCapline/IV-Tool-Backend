@@ -5,7 +5,7 @@ const fetchAndSaveAppointments = async (req, res) => {
     await AppointmentService.fetchDataAndStoreAppointments();
     res
       .status(200)
-      .json({ message: "Appointments fetched and saved succesfully" });
+      .json({ message: "Appointments  1 fetched and saved succesfully" });
   } catch (error) {
     console.log("Error at fetchAndSaveAppointments -Controller layer");
     res.status(500).json({ message: error.message });

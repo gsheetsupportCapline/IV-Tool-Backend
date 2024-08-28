@@ -2,73 +2,37 @@
 const mongoose = require("mongoose");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
+
+
 async function fetchDataAndStoreAppointments() {
   try {
-    const currentDate = new Date();
-    const startDate = new Date(
-      currentDate.setMonth(currentDate.getMonth() - 2)
-    ); // Start date: 2 months ago
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 15); // End date: current date + 15 days
-    console.log("Start Date", startDate);
+ 
 
-    console.log("End Date ", endDate);
     const officeNames = [
-      "Aransas",
-      "Azle",
-      "Beaumont",
-      "Benbrook",
-      "Calallen",
-      "Crosby",
-      "Devine",
-      "Elgin",
-      "Grangerland",
-      "Huffman",
-      "Jasper",
-      "Lavaca",
-      "Liberty",
-      "Lytle",
-      "Mathis",
-      "Potranco",
-      "Rio Bravo",
-      "Riverwalk",
-      "Rockdale",
-      "Sinton",
-      "Splendora",
-      "Springtown",
-      "Tidwell",
-      "Victoria",
-      "Westgreen",
-      "Winnie",
-      "OS",
+       
+      "Aransas", "Azle", "Beaumont", "Benbrook", "Calallen", "Crosby",
+      "Devine", "Elgin", "Grangerland", "Huffman", "Jasper", "Lavaca",
+      "Liberty", "Lytle", "Mathis", "Potranco", "Rio Bravo", "Riverwalk",
+      "Rockdale", "Sinton", "Splendora", "Springtown", "Tidwell", "Victoria",
+      "Westgreen", "Winnie",
     ];
 
     for (const officeName of officeNames) {
-      const response = await AppointmentRepository.fetchDataByOffice(
-        officeName
-      );
+      const response = await AppointmentRepository.fetchDataByOffice(officeName);
+      // console.log(response);
       const appointmentsData = response.data;
 
-      const appointments = appointmentsData
+      const newAppointments = appointmentsData
         .map((appointmentData) => {
-          const appointmentDate = new Date(appointmentData.c5);
-          if (appointmentDate < startDate || appointmentDate > endDate)
-            return null; // Skip out-of-range appointments
-
-          const hours = appointmentDate.getHours().toString().padStart(2, "0");
-          const minutes = appointmentDate
-            .getMinutes()
-            .toString()
-            .padStart(2, "0");
-          const seconds = appointmentDate
-            .getSeconds()
-            .toString()
-            .padStart(2, "0");
-          const appointmentTime = `${hours}:${minutes}:${seconds}`;
-
+          const dateTimeString = appointmentData.c5.split(" ");
+          const [datePart, timePart] = dateTimeString;
+          const appointmentDate = datePart
+     
+ 
+ 
           return {
             appointmentDate: appointmentDate,
-            appointmentTime: appointmentTime,
+            appointmentTime: timePart.substring(0, 8),
             patientId: appointmentData.c1,
             patientName: `${appointmentData.c12} ${appointmentData.c13}`,
             insuranceName: appointmentData.c7,
@@ -89,39 +53,50 @@ async function fetchDataAndStoreAppointments() {
             patientDOB: appointmentData.c20,
           };
         })
-        .filter((appointment) => appointment !== null); // Remove nulls for out-of-range appointments
-
+      
       let officeDoc = await Appointment.findOne({ officeName: officeName });
 
       if (!officeDoc) {
+        // If office does not exist, create a new document
         officeDoc = new Appointment({
           officeName: officeName,
-          appointments: appointments,
+          appointments: newAppointments,
         });
-
         await officeDoc.save();
-      } else {
-        for (const newAppointment of appointments) {
-          const existingAppointmentIndex = appointments.findIndex(
-            (appointment) =>
-              appointment.patientId === newAppointment.patientId &&
-              appointment.appointmentDate === newAppointment.appointmentDate &&
-              appointment.appointmentTime === newAppointment.appointmentTime
-          );
+        console.log("New office document created:", officeName);
+      }  
+       else {
+        const existingAppointments = officeDoc.appointments;
+        let appointmentsToAdd = [];
 
-          if (existingAppointmentIndex === -1) {
-            officeDoc.appointments.push(newAppointment);
+        newAppointments.forEach(newAppointment => {
+          const isDuplicate = existingAppointments.some(existingAppointment =>{
+     // Convert both dates to Date objects
+     const existingDate = new Date(existingAppointment.appointmentDate);
+     const newDate = new Date(newAppointment.appointmentDate);
+
+     // Compare dates, patient ID, and insurance name
+     return (
+       existingAppointment.patientId == newAppointment.patientId &&
+       existingDate.getDate() === newDate.getDate() &&
+       existingAppointment.insuranceName == newAppointment.insuranceName
+     );
+    });
+          if (!isDuplicate) {
+            appointmentsToAdd.push(newAppointment);
           }
+        });
+        if (appointmentsToAdd.length > 0) {
+          // Update the office document with truly new appointments
+          await Appointment.updateOne(
+            { officeName: officeName },
+            { $push: { appointments: { $each: appointmentsToAdd } }}
+          );
+          console.log(`Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`);
+        } else {
+          console.log("No new appointments to add for office:", officeName);
         }
-
-        // Remove out-of-range appointments
-        officeDoc.appointments = officeDoc.appointments.filter(
-          (appointment) =>
-            appointment.appointmentDate >= startDate &&
-            appointment.appointmentDate <= endDate
-        );
-        await officeDoc.save();
-      }
+       }
     }
   } catch (error) {
     console.log("Error at Service Layer fetchDataAndStoreAppointments");
@@ -129,6 +104,8 @@ async function fetchDataAndStoreAppointments() {
     throw error;
   }
 }
+
+
 
 async function fetchDataForSpecificOffice(officeName) {
   try {
@@ -173,6 +150,12 @@ async function fetchDataForSpecificOffice(officeName) {
         const planType = appointmentData.planType;
         const ivRemarks = appointmentData.ivRemarks;
         const source = appointmentData.source;
+        const MIDSSN = appointmentData.MIDSSN;
+        const ivAssignedDate =appointmentData.ivAssignedDate ;
+        
+       // const formattedivAssignedDate = `${ivAssignedDate.getFullYear()}-${(ivAssignedDate.getMonth() + 1).toString().padStart(2, '0')}-${ivAssignedDate.getDate().toString().padStart(2, '0')}`;
+     
+       
 
         // const timeZoneOffset = 5.5; // Example timezone offset for IST (Indian Standard Time)
         // let localAppointmentDate = new Date(
@@ -220,6 +203,8 @@ async function fetchDataForSpecificOffice(officeName) {
           ivRemarks: ivRemarks,
           planType: planType,
           source: source,
+          ivAssignedDate:ivAssignedDate ,
+          MIDSSN:MIDSSN
         });
       });
     });
