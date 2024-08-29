@@ -45,7 +45,7 @@ async function fetchDataByOffice(officeName) {
       },
     });
 
-    
+     
     // console.log("Full query:", response.config.url);
     // console.log("Query parameters:", response.config.params);
 
