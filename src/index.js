@@ -4,6 +4,7 @@ const appointmentRoutes = require("./routes/appointment-routes");
 const officeRoutes = require("./routes/office-routes");
 const userRoutes = require("./routes/user-routes.js");
 const authRoutes = require("./routes/auth-routes.js");
+const dropdownValuesRoutes = require("./routes/dropdownValues-routes.js")
 const cors = require("cors");
 
 const setupJob = require("./cronJobs/appointmentFetcher");
@@ -21,6 +22,7 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/offices", officeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/dropdownValues", dropdownValuesRoutes);
 
 app.get("/ping", (req, res) => {
   return res.json({ message: `IV Tool Backend Service is alive` });
