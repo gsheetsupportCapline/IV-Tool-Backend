@@ -1,15 +1,33 @@
+ 
+
 const fileUploadRepository = require('../repository/fileUpload-repository');
+const multerS3 = require('multer-s3');
+const multer = require('multer');
+const path = require('path');
+const s3 = require('../utils/s3.util');
 
-async function uploadImage(imageFile) {
-  const buffer = Buffer.from(imageFile.data, 'base64');
-  const fileName = Date.now() + '-' + imageFile.originalname;
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    acl: 'public-read',
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      cb(null, Date.now().toString() + '-' + file.originalname);
+    }
+  })
+});
 
+const uploadImage = async (file) => {
   try {
-    const result = await fileUploadRepository.uploadImage(buffer, fileName);
-    return result;
+    const result = await fileUploadRepository.uploadFileToS3(file);
+    return result.Location;
   } catch (error) {
-    throw new Error('Failed to upload image');
+    console.error('Error uploading image:', error);
+    throw error;
   }
-}
+};
 
 module.exports = { uploadImage };

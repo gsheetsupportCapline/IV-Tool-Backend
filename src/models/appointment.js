@@ -180,7 +180,14 @@ const appointmentSchema = new mongoose.Schema(
           default: null,
           required: false,
         },
-       
+        images: [
+          {
+            fileName: String,
+            originalName: String,
+            url: String,
+            createdAt: Date
+          }
+        ],
       },
     ],
   },
