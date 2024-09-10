@@ -78,7 +78,7 @@ async function fetchDataAndStoreAppointments() {
      // Compare dates, patient ID, and insurance name
      return (
        existingAppointment.patientId == newAppointment.patientId &&
-       existingDate.getDate() === newDate.getDate() &&
+       existingDate.getDate() == newDate.getDate() &&
        existingAppointment.insuranceName == newAppointment.insuranceName
      );
     });
@@ -278,6 +278,7 @@ async function createNewRushAppointment(officeName, data) {
       insurancePhone: data.insurancePhone,
 
       ivType: "Rush",
+      imageUrl: data.imageUrl
     };
 
     const result = await Appointment.updateOne(

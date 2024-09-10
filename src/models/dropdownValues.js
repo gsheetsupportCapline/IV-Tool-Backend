@@ -6,7 +6,9 @@ const DropdownValuesSchema = new Schema({
   options: [
     {
       id: { type: Number, required: true },
-      name: { type: String, required: true }
+      name: { type: String, required: true },
+      username: { type: String, required: false },
+      timestamp: { type: Date, required: false },
     }
   ]
 });
