@@ -51,6 +51,7 @@ async function fetchDataAndStoreAppointments() {
             homePhone: appointmentData.c18,
             workPhone: appointmentData.c19,
             patientDOB: appointmentData.c20,
+            ivRequestedDate : new Date()
           };
         })
       
@@ -152,6 +153,8 @@ async function fetchDataForSpecificOffice(officeName) {
         const source = appointmentData.source;
         const MIDSSN = appointmentData.MIDSSN;
         const ivAssignedDate =appointmentData.ivAssignedDate ;
+        const imageUrl = appointmentData.imageUrl;
+        const ivRequestedDate = appointmentData.ivRequestedDate;
         
        // const formattedivAssignedDate = `${ivAssignedDate.getFullYear()}-${(ivAssignedDate.getMonth() + 1).toString().padStart(2, '0')}-${ivAssignedDate.getDate().toString().padStart(2, '0')}`;
      
@@ -204,7 +207,9 @@ async function fetchDataForSpecificOffice(officeName) {
           planType: planType,
           source: source,
           ivAssignedDate:ivAssignedDate ,
-          MIDSSN:MIDSSN
+          MIDSSN:MIDSSN,
+          imageUrl:imageUrl,
+          ivRequestedDate:ivRequestedDate
         });
       });
     });
@@ -276,9 +281,10 @@ async function createNewRushAppointment(officeName, data) {
       MIDSSN: data.MIDSSN,
       insuranceName: data.insuranceName,
       insurancePhone: data.insurancePhone,
-
+      ivRequestedDate: data.ivRequestedDate ,
       ivType: "Rush",
       imageUrl: data.imageUrl
+
     };
 
     const result = await Appointment.updateOne(
@@ -349,6 +355,7 @@ async function fetchUserAppointments(userId) {
           ivRemarks: 1,
           provider: 1,
           noteRemarks: 1,
+         
           office: "$officeName", // Add officeName as a field named office
           _id: "$appointment._id", // Use the appointment's _id as the document's _id
         },
