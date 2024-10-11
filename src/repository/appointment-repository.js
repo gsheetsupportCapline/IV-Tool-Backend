@@ -21,7 +21,7 @@ async function fetchDataByOffice(officeName) {
     currentDate.setDate(currentDate.getDate() + daysToAdd);
     const endMonth = currentDate.getMonth() + 1; // Months are zero-based in JavaScript
     const endDay = currentDate.getDate();
-    const endYear = currentDate.getFullYear();
+    const endYear = currentDate.getFullYear(); 
 
   
     endDate = `${endMonth < 10 ? "0" + endMonth : endMonth}/${
