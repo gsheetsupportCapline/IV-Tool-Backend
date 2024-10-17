@@ -22,7 +22,7 @@ module.exports = {
     const updateOptions = {
       spreadsheetId: sheetId,
       range: range,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "USER_ENTERED", 
       resource: { values: updateValues },  
     };
     const gsapi = google.sheets({ version: "v4", auth: client });
@@ -64,3 +64,4 @@ module.exports = {
     }
   },
 };
+ 
