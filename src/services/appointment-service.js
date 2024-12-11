@@ -9,7 +9,6 @@ async function fetchDataAndStoreAppointments() {
  
 
     const officeNames = [
-       
       "Aransas", "Azle", "Beaumont", "Benbrook", "Calallen", "Crosby",
       "Devine", "Elgin", "Grangerland", "Huffman", "Jasper", "Lavaca",
       "Liberty", "Lytle", "Mathis", "Potranco", "Rio Bravo", "Riverwalk",
@@ -27,9 +26,6 @@ async function fetchDataAndStoreAppointments() {
           const dateTimeString = appointmentData.c5.split(" ");
           const [datePart, timePart] = dateTimeString;
           const appointmentDate = datePart
-     
- 
- 
           return {
             appointmentDate: appointmentDate,
             appointmentTime: timePart.substring(0, 8),
@@ -76,11 +72,11 @@ async function fetchDataAndStoreAppointments() {
      const existingDate = new Date(existingAppointment.appointmentDate);
      const newDate = new Date(newAppointment.appointmentDate);
 
-     // Compare dates, patient ID, and insurance name
+     // Compare dates, patient ID
      return (
        existingAppointment.patientId == newAppointment.patientId &&
-       existingDate.getDate() == newDate.getDate() &&
-       existingAppointment.insuranceName == newAppointment.insuranceName
+       existingDate.getDate() == newDate.getDate() 
+      // && existingAppointment.insuranceName == newAppointment.insuranceName
      );
     });
           if (!isDuplicate) {
@@ -90,7 +86,7 @@ async function fetchDataAndStoreAppointments() {
         if (appointmentsToAdd.length > 0) {
           // Update the office document with truly new appointments
           await Appointment.updateOne(
-            { officeName: officeName },
+            { officeName: officeName }, 
             { $push: { appointments: { $each: appointmentsToAdd } }}
           );
           console.log(`Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`);
@@ -98,7 +94,7 @@ async function fetchDataAndStoreAppointments() {
           console.log("No new appointments to add for office:", officeName);
         }
        }
-    }
+    }  
   } catch (error) {
     console.log("Error at Service Layer fetchDataAndStoreAppointments");
     console.error("Error fetching and storing data:", error);

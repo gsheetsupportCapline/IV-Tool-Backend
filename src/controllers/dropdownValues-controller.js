@@ -20,7 +20,7 @@ const deleteOptions =   async (req, res) => {
     const result = await dropdownValuesService.deleteOptions(category, optionIds);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error in deleteOptions:', error.message);
+    console.error('Error in deleteOptions:', error.message);  
     res.status(500).json({ error: 'Failed to delete options' });
   }
 };
