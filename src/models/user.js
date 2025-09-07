@@ -38,9 +38,12 @@ const userSchema = new mongoose.Schema(
 // Hash the password before saving the user model
 userSchema.pre("save", function (next) {
   const user = this;
-  const SALT = bcrypt.genSaltSync(9);
-  const encryptedPassword = bcrypt.hashSync(user.password, SALT);
-  user.password = encryptedPassword;
+  if (user.isModified('password')) {
+    if (!user.password.startsWith('$2b$') && !user.password.startsWith('$2a$')) {
+      const SALT = bcrypt.genSaltSync(9);
+      user.password = bcrypt.hashSync(user.password, SALT);
+    }
+  }
   next();
 });
 
@@ -56,4 +59,28 @@ userSchema.methods.genJWT = function generate() {
 
 const User = mongoose.model("User", userSchema);
 
-module.exports = User;
+// Add this function below your User model
+async function updateUserDetails(userId, updateData) {
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  if (updateData.name) user.name = updateData.name;
+  if (updateData.email) user.email = updateData.email;
+  if (updateData.role) user.role = updateData.role;
+  if (updateData.assignedOffice !== undefined) user.assignedOffice = updateData.assignedOffice;
+
+  if (updateData.password) {
+    const SALT = bcrypt.genSaltSync(9);
+    user.password = bcrypt.hashSync(updateData.password, SALT);
+  }
+
+  await user.save();
+  return user;
+}
+
+// Update your exports like this:
+// console.log('Exporting updateUserDetails:', updateUserDetails);
+module.exports = {
+  User,
+  updateUserDetails
+};
