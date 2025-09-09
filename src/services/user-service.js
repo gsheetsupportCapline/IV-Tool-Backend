@@ -7,6 +7,7 @@ const userService = {
       return user;
     } catch (error) {
       console.log("Something went wrong in the sign user - service layer");
+      console.log('Actual error:', error);
       throw error;
     }
   },
@@ -17,6 +18,7 @@ const userService = {
       return user;
     } catch (error) {
       console.log("Something went wrong in the user - service layer");
+      console.log('Actual error:', error);
       throw error;
     }
   },

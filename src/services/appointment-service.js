@@ -104,121 +104,50 @@ async function fetchDataAndStoreAppointments() {
 
 
 
-async function fetchDataForSpecificOffice(officeName) {
+async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
   try {
-    const response = await AppointmentRepository.getDataForOffice(officeName);
-    // console.log("response  a", response);
-    // const officeData = response[0].appointments;
+    // Convert to Date objects
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-    const result = [];
+    const results = await Appointment.aggregate([
+        {
+            $match: {
+                officeName: { $in: [officeName] }
+            }
+        },
+        {
+            $unwind: { path: "$appointments" }
+        },
+        {
+            $match: {
+                "appointments.appointmentDate": {
+                    $gte: new Date(start),
+                    $lte:  new Date(end)
+                }
+            }
+        },
+        {
+            $set: {
+                "appointments.officeId": "$_id",
+                "appointments.office": "$officeName"
+            }
+        },
+        {
+            $replaceRoot: { newRoot: "$appointments" }
+        },
+        {
+            $sort: { appointmentDate: 1, appointmentTime: 1 }
+        }
+    ]);
 
-    response.forEach((doc) => {
-      const officeName = doc.officeName;
-      const officeData = doc.appointments;
-      officeData.forEach((appointmentData) => {
-        // Extract relevant information
-        const appointmentDate = appointmentData.appointmentDate;
-        const appointmentDateString = appointmentDate
-          .toISOString()
-          .split("T")[0]; // Splits the ISO string and takes the date part
-        const patientId = appointmentData.patientId;
-        const patientName = appointmentData.patientName;
-        const insuranceName = appointmentData.insuranceName;
-        const insurancePhone = appointmentData.insurancePhone;
-        const policyHolderName = appointmentData.policyHolderName;
-        const policyHolderDOB = appointmentData.policyHolderDOB;
-        const appointmentType = appointmentData.appointmentType; // chair name
-        const memberId = appointmentData.memberId;
-        const employerName = appointmentData.employerName;
-        const groupNumber = appointmentData.groupNumber;
-        const relationWithPatient = appointmentData.relationWithPatient;
-        const medicaidId = appointmentData.medicaidId;
-        const carrierId = appointmentData.carrierId;
-        const confirmationStatus = appointmentData.confirmationStatus;
-        const cellPhone = appointmentData.cellPhone;
-        const homePhone = appointmentData.homePhone;
-        const workPhone = appointmentData.workPhone;
-        const ivType = appointmentData.ivType;
-        const status = appointmentData.status;
-        const assignedUser = appointmentData.assignedUser;
-        const completionStatus = appointmentData.completionStatus;
-        // const office = appointmentData.office;
-        const _id = appointmentData._id;
-        const planType = appointmentData.planType;
-        const ivRemarks = appointmentData.ivRemarks;
-        const source = appointmentData.source;
-        const MIDSSN = appointmentData.MIDSSN;
-        const ivAssignedDate =appointmentData.ivAssignedDate ;
-        const imageUrl = appointmentData.imageUrl;
-        const ivRequestedDate = appointmentData.ivRequestedDate;
-        
-       // const formattedivAssignedDate = `${ivAssignedDate.getFullYear()}-${(ivAssignedDate.getMonth() + 1).toString().padStart(2, '0')}-${ivAssignedDate.getDate().toString().padStart(2, '0')}`;
-     
-       
-
-        // const timeZoneOffset = 5.5; // Example timezone offset for IST (Indian Standard Time)
-        // let localAppointmentDate = new Date(
-        //   appointmentDate.getTime() + timeZoneOffset * 60 * 60 * 1000
-        // ); // Convert to local time by adding the offset
-
-        // Extract hours, minutes, and seconds from the adjusted local appointment date
-        // const hours = localAppointmentDate
-        //   .getUTCHours()
-        //   .toString()
-        //   .padStart(2, "0");
-        // const minutes = "30"; // Fixed minutes as per your requirement
-        // const seconds = "00"; // Assuming seconds are not significant for this conversion
-        // const appointmentTime = `${hours}:${minutes}:${seconds}`;
-
-        const appointmentTime = appointmentData.appointmentTime;
-
-        // Push the appointment object into the result array
-        result.push({
-          _id: _id,
-          office: officeName,
-          appointmentDate: appointmentDateString,
-          patientId: patientId,
-          patientName: patientName,
-          insuranceName: insuranceName,
-          insurancePhone: insurancePhone,
-          policyHolderName: policyHolderName,
-          policyHolderDOB: policyHolderDOB,
-          appointmentType: appointmentType,
-          memberId: memberId,
-          employerName: employerName,
-          groupNumber: groupNumber,
-          relationWithPatient: relationWithPatient,
-          medicaidId: medicaidId,
-          carrierId: carrierId,
-          confirmationStatus: confirmationStatus,
-          cellPhone: cellPhone,
-          homePhone: homePhone,
-          workPhone: workPhone,
-          ivType: ivType,
-          status: status,
-          assignedUser: assignedUser,
-          completionStatus: completionStatus,
-          appointmentTime: appointmentTime,
-          ivRemarks: ivRemarks,
-          planType: planType,
-          source: source,
-          ivAssignedDate:ivAssignedDate ,
-          MIDSSN:MIDSSN,
-          imageUrl:imageUrl,
-          ivRequestedDate:ivRequestedDate
-        });
-      });
-    });
-
-    return result;
+    return results;
   } catch (error) {
-    console.log(
-      "Error at Service Layer in function fetchDataForSpecificOffice"
-    );
-    console.error("Error fetching and storing data:", error);
+    console.error("Error at Service Layer in fetchDataForSpecificOffice:", error);
     throw error;
   }
 }
+
 
 async function updateAppointmentInArray(
   officeName,
