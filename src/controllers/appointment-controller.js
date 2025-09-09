@@ -12,11 +12,15 @@ const fetchAndSaveAppointments = async (req, res) => {
   }
 };
 
+
 const fetchDataForSpecificOffice = async (req, res) => {
   try {
     const officeName = req.params.officeName;
+    const { startDate, endDate } = req.query;
     const appointments = await AppointmentService.fetchDataForSpecificOffice(
-      officeName
+      officeName,
+      startDate,
+      endDate
     );
     res.status(200).json({ appointments });
   } catch (error) {
@@ -24,6 +28,7 @@ const fetchDataForSpecificOffice = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 const updateAppointmentInArray = async (req, res) => {
   try {
