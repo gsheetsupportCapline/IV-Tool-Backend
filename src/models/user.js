@@ -1,45 +1,55 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Name cannot be empty"],
+      required: [true, 'Name cannot be empty'],
     },
     password: {
       type: String,
-      required: [true, "Password cannot be empty"],
+      required: [true, 'Password cannot be empty'],
     },
     email: {
       type: String,
-      required: [true, "Email cannot be empty"],
+      required: [true, 'Email cannot be empty'],
       unique: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please fill a valid email address",
+        'Please fill a valid email address',
       ],
     },
     role: {
       type: String,
-      enum: ["user", "admin", "officeuser"],
-      default: "user",
+      enum: ['user', 'admin', 'officeuser'],
+      default: 'user',
     },
-
     assignedOffice: {
       type: String,
       required: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    shiftTime: {
+      type: String,
+      default: '8PM-5AM',
     },
   },
   { timestamps: true }
 );
 
 // Hash the password before saving the user model
-userSchema.pre("save", function (next) {
+userSchema.pre('save', function (next) {
   const user = this;
   if (user.isModified('password')) {
-    if (!user.password.startsWith('$2b$') && !user.password.startsWith('$2a$')) {
+    if (
+      !user.password.startsWith('$2b$') &&
+      !user.password.startsWith('$2a$')
+    ) {
       const SALT = bcrypt.genSaltSync(9);
       user.password = bcrypt.hashSync(user.password, SALT);
     }
@@ -52,12 +62,12 @@ userSchema.methods.comparePassword = function compare(password) {
 };
 
 userSchema.methods.genJWT = function generate() {
-  return jwt.sign({ id: this._id, email: this.email }, "IV_Secret", {
-    expiresIn: "1h",
+  return jwt.sign({ id: this._id, email: this.email }, 'IV_Secret', {
+    expiresIn: '1h',
   });
 };
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 
 // Add this function below your User model
 async function updateUserDetails(userId, updateData) {
@@ -67,7 +77,10 @@ async function updateUserDetails(userId, updateData) {
   if (updateData.name) user.name = updateData.name;
   if (updateData.email) user.email = updateData.email;
   if (updateData.role) user.role = updateData.role;
-  if (updateData.assignedOffice !== undefined) user.assignedOffice = updateData.assignedOffice;
+  if (updateData.assignedOffice !== undefined)
+    user.assignedOffice = updateData.assignedOffice;
+  if (updateData.isActive !== undefined) user.isActive = updateData.isActive;
+  if (updateData.shiftTime) user.shiftTime = updateData.shiftTime;
 
   if (updateData.password) {
     const SALT = bcrypt.genSaltSync(9);
@@ -82,5 +95,5 @@ async function updateUserDetails(userId, updateData) {
 // console.log('Exporting updateUserDetails:', updateUserDetails);
 module.exports = {
   User,
-  updateUserDetails
+  updateUserDetails,
 };

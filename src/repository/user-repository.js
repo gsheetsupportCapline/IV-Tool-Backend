@@ -1,4 +1,4 @@
-const { User } = require("../models/user");
+const { User } = require('../models/user');
 
 const userRepository = {
   create: async (data) => {
@@ -7,7 +7,7 @@ const userRepository = {
       return await user.save();
     } catch (error) {
       console.log(
-        "Something went wrong in the create - userRepository repository layer"
+        'Something went wrong in the create - userRepository repository layer'
       );
       throw error;
     }
@@ -16,22 +16,26 @@ const userRepository = {
   findBy: async (data) => {
     try {
       const response = await User.findOne(data);
-      console.log("response ky arha ", response);
+      console.log('response ky arha ', response);
       return response;
     } catch (error) {
       console.log(
-        "Something went wrong in the findBy - userRepository repository layer"
+        'Something went wrong in the findBy - userRepository repository layer'
       );
       throw error;
     }
   },
 
-  findAll: async () => {
+  findAll: async (filters = {}) => {
     try {
-      return await User.find({});
+      // Default to showing only active users if isActive is not explicitly set
+      const query = {
+        isActive: filters.isActive !== undefined ? filters.isActive : true,
+      };
+      return await User.find(query);
     } catch (error) {
       console.log(
-        "Something went wrong in the findAll - userRepository repository layer"
+        'Something went wrong in the findAll - userRepository repository layer'
       );
       throw error;
     }

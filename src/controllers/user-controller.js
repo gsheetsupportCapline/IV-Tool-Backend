@@ -1,6 +1,6 @@
 // src/controllers/user-controller.js
 
-const userService = require("../services/user-service");
+const userService = require('../services/user-service');
 
 const signup = async (req, res) => {
   try {
@@ -8,19 +8,21 @@ const signup = async (req, res) => {
       email: req.body.email,
       password: req.body.password,
       name: req.body.name,
-      role: req.body.role || "user",
+      role: req.body.role || 'user',
       assignedOffice: req.body.assignedOffice,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      shiftTime: req.body.shiftTime || '8PM-5AM',
     });
     return res.status(201).json({
       success: true,
-      message: "Successfully created a new user",
+      message: 'Successfully created a new user',
       data: user,
       err: {},
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
+      message: 'Something went wrong',
       data: {},
       err: error,
     });
@@ -32,14 +34,14 @@ const login = async (req, res) => {
     const token = await userService.signin(req.body.email, req.body.password);
     return res.status(200).json({
       success: true,
-      message: "Successfully logged in",
+      message: 'Successfully logged in',
       data: token,
       err: {},
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
+      message: 'Something went wrong',
       data: {},
       err: error,
     });
@@ -48,10 +50,18 @@ const login = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const users = await userService.getAllUsers();
+    const { isActive } = req.query;
+
+    // Prepare filters object
+    const filters = {};
+    if (isActive !== undefined) {
+      filters.isActive = isActive === 'true'; // Convert string to boolean
+    }
+
+    const users = await userService.getAllUsers(filters);
     res.status(200).json({ success: true, data: users });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching users" });
+    res.status(500).json({ success: false, message: 'Error fetching users' });
   }
 };
 
