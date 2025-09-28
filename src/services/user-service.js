@@ -32,6 +32,11 @@ const userService = {
         throw { message: 'No user found' };
       }
 
+      // Check if user is active
+      if (!user.isActive) {
+        throw { message: 'Account is inactive. Please contact administrator.' };
+      }
+
       if (!user.comparePassword(password)) {
         throw { message: 'Incorrect password' };
       }
