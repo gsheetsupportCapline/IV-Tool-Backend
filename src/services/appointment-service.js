@@ -250,14 +250,36 @@ async function createNewRushAppointment(officeName, data) {
   }
 }
 
-async function fetchUserAppointments(userId) {
+async function fetchUserAppointments(userId, startDate, endDate) {
   try {
+    // Convert dates to UTC Date objects to avoid timezone issues
+    const startDateObj = new Date(startDate + 'T00:00:00.000Z'); // Force UTC start of day
+    const endDateObj = new Date(endDate + 'T23:59:59.999Z'); // Force UTC end of day
+
+    console.log('Date range for user appointments:', {
+      userId,
+      startDate,
+      endDate,
+      startDateObj: startDateObj.toISOString(),
+      endDateObj: endDateObj.toISOString(),
+    });
+
+    // Default to ivAssignedDate filtering
+    const dateFieldName = 'appointments.ivAssignedDate';
+
     const appointments = await Appointment.aggregate([
       { $match: { 'appointments.assignedUser': userId } }, // Filter documents where assignedUser matches userId
       { $unwind: '$appointments' }, // Deconstruct the appointments array
-      { $match: { 'appointments.assignedUser': userId } }, // Re-filter to ensure only matching appointments are included
-      // { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
-      { $sort: { 'appointments.appointmentDate': -1 } }, // Sort appointments by date in descending order
+      {
+        $match: {
+          'appointments.assignedUser': userId,
+          [dateFieldName]: {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+        },
+      }, // Re-filter to ensure only matching appointments are included with full date range
+      { $sort: { [dateFieldName]: -1 } }, // Sort appointments by ivAssignedDate in descending order
 
       {
         $group: {
@@ -303,16 +325,30 @@ async function fetchUserAppointments(userId) {
           ivRemarks: 1,
           provider: 1,
           noteRemarks: 1,
-
+          ivCompletedDate: 1,
+          ivAssignedDate: 1,
+          ivRequestedDate: 1,
+          ivAssignedByUserName: 1,
+          completedBy: 1,
           office: '$officeName', // Add officeName as a field named office
           _id: '$appointment._id', // Use the appointment's _id as the document's _id
         },
       },
     ]);
-    // Check if appointments array is empty
-    if (appointments.length === 0) {
-      console.log('No appointments found for userId:', userId);
-      return [];
+
+    console.log(
+      `Found ${appointments.length} appointments for userId: ${userId} with date filters`
+    );
+
+    // Debug: Log some appointment dates if found
+    if (appointments.length > 0) {
+      console.log(
+        'Sample appointment ivAssignedDates:',
+        appointments.slice(0, 3).map((apt) => ({
+          id: apt._id,
+          ivAssignedDate: apt.ivAssignedDate,
+        }))
+      );
     }
 
     return appointments;
@@ -378,13 +414,20 @@ async function updateIndividualAppointmentDetails(
   }
 }
 
-async function getAssignedCountsByOffice(officeName) {
-  const counts = await AppointmentRepository.getAssignedCountsByOffice(
-    officeName
+async function getAssignedCountsByOffice(officeName, startDate, endDate) {
+  const result = await AppointmentRepository.getAssignedCountsByOffice(
+    officeName,
+    startDate,
+    endDate
   );
   return {
     officeName,
-    assignedCounts: counts,
+    assignedCounts: result.counts,
+    completeData: result.completeData,
+    dateRange: {
+      startDate,
+      endDate,
+    },
   };
 }
 async function fetchUnassignedAppointmentsInRange(

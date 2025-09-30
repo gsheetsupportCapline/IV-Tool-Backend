@@ -21,7 +21,7 @@ const OfficeDataRepository = {
           $match: {
             [dateFieldName]: {
               $gte: startDate,
-              $lte: endDate,
+              $lt: endDate,
             },
           },
         },

@@ -82,12 +82,55 @@ const createNewRushAppointment = async (req, res) => {
 const fetchUserAppointments = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const appointments = await AppointmentService.fetchUserAppointments(userId);
+    const { startDate, endDate } = req.query;
+
+    // Validate required fields
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required query parameters',
+      });
+    }
+
+    // Validate date format
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Please use YYYY-MM-DD format',
+      });
+    }
+
+    if (startDateObj > endDateObj) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate cannot be later than endDate',
+      });
+    }
+
+    const appointments = await AppointmentService.fetchUserAppointments(
+      userId,
+      startDate,
+      endDate
+    );
     console.log('Appointment response', appointments);
-    res.status(200).json(appointments);
+    res.status(200).json({
+      success: true,
+      data: appointments,
+      filters: {
+        userId,
+        startDate,
+        endDate,
+      },
+    });
   } catch (error) {
     console.log('Error at fetchUserAppointments -Controller layer');
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -126,15 +169,55 @@ const updateIndividualAppointmentDetails = async (req, res) => {
 
 const getAssignedCounts = async (req, res) => {
   const { officeName } = req.params;
+  const { startDate, endDate } = req.query;
+
+  // Validate required fields
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      message: 'startDate and endDate are required query parameters',
+    });
+  }
+
+  // Validate date format
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
+
+  if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid date format. Please use YYYY-MM-DD format',
+    });
+  }
+
+  if (startDateObj > endDateObj) {
+    return res.status(400).json({
+      success: false,
+      message: 'startDate cannot be later than endDate',
+    });
+  }
 
   try {
     const result = await AppointmentService.getAssignedCountsByOffice(
-      officeName
+      officeName,
+      startDate,
+      endDate
     );
-    res.json(result);
+    res.json({
+      success: true,
+      data: result,
+      filters: {
+        officeName,
+        startDate,
+        endDate,
+      },
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ message: 'Failed to fetch assigned counts.' });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assigned counts.',
+    });
   }
 };
 

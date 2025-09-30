@@ -1,8 +1,8 @@
 // appointment-repository.js
 
-const axios = require("axios");
-const { ES_URL } = require("../config/server.config");
-const Appointment = require("../models/appointment");
+const axios = require('axios');
+const { ES_URL } = require('../config/server.config');
+const Appointment = require('../models/appointment');
 
 async function fetchDataByOffice(officeName) {
   try {
@@ -13,44 +13,41 @@ async function fetchDataByOffice(officeName) {
     const startDate = `${
       twoMonthsAgo.getMonth() + 1
     }/${twoMonthsAgo.getDate()}/${twoMonthsAgo.getFullYear()}`;
-    
+
     let endDate;
     const daysToAdd = 15;
 
-    
     currentDate.setDate(currentDate.getDate() + daysToAdd);
     const endMonth = currentDate.getMonth() + 1; // Months are zero-based in JavaScript
     const endDay = currentDate.getDate();
-    const endYear = currentDate.getFullYear(); 
+    const endYear = currentDate.getFullYear();
 
-  
-    endDate = `${endMonth < 10 ? "0" + endMonth : endMonth}/${
-      endDay < 10 ? "0" + endDay : endDay
+    endDate = `${endMonth < 10 ? '0' + endMonth : endMonth}/${
+      endDay < 10 ? '0' + endDay : endDay
     }/${endYear}`;
 
-      console.log("Start Date ", startDate);
-      console.log("End Date ",endDate);
-   
+    console.log('Start Date ', startDate);
+    console.log('End Date ', endDate);
 
     const response = await axios.get(ES_URL, {
       params: {
         office: officeName,
-        password: "134568",
+        password: '134568',
         // query: `from patient,appointment,chairs,patient_letter,employer,insurance_company Where  patient.patient_id=appointment.patient_id AND appointment.location_id=chairs.chair_num AND patient_letter.patient_id=appointment.patient_id AND employer.employer_id=patient.prim_employer_id AND employer.insurance_company_id=insurance_company.insurance_company_id AND appointment.start_time BETWEEN '${startDate}' AND '${endDate}' `,
- query:`FROM appointment INNER JOIN patient ON patient.patient_id = appointment.patient_id INNER JOIN chairs ON appointment.location_id = chairs.chair_num LEFT JOIN patient_letter ON patient_letter.patient_id = appointment.patient_id LEFT JOIN employer ON employer.employer_id = patient.prim_employer_id LEFT JOIN insurance_company ON employer.insurance_company_id = insurance_company.insurance_company_id WHERE appointment.start_time BETWEEN '${startDate}' AND '${endDate}' AND patient_letter.prim_policy_holder is not null`,
+        query: `FROM appointment INNER JOIN patient ON patient.patient_id = appointment.patient_id INNER JOIN chairs ON appointment.location_id = chairs.chair_num LEFT JOIN patient_letter ON patient_letter.patient_id = appointment.patient_id LEFT JOIN employer ON employer.employer_id = patient.prim_employer_id LEFT JOIN insurance_company ON employer.insurance_company_id = insurance_company.insurance_company_id WHERE appointment.start_time BETWEEN '${startDate}' AND '${endDate}' AND patient_letter.prim_policy_holder is not null`,
         selectcolumns:
-          "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date",
-        columnCount: "20",
-        
+          'patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date',
+        columnCount: '20',
       },
     });
 
-     
     // console.log("Full query:", response.config.url);
     // console.log("Query parameters:", response.config.params);
 
-console.log("fetching response");
-console.log(`Number of objects returned for office "${officeName}": ${response.data.data.length}`);
+    console.log('fetching response');
+    console.log(
+      `Number of objects returned for office "${officeName}": ${response.data.data.length}`
+    );
     return response.data;
   } catch (error) {
     console.error(
@@ -63,7 +60,7 @@ console.log(`Number of objects returned for office "${officeName}": ${response.d
 async function getDataForOffice(officeName) {
   try {
     let query = {};
-    if (officeName === "AllOffices") {
+    if (officeName === 'AllOffices') {
       // Special case: Fetch all appointments if officeName is "AllOffice"
       const appointmentData = await Appointment.find({});
       // console.log("appointments All offices", appointmentData);
@@ -72,7 +69,7 @@ async function getDataForOffice(officeName) {
       // Regular case: Filter by officeName
       query.officeName = officeName;
     }
-  
+
     const appointmentData = await Appointment.find(query);
     // console.log("appointments", appointmentData);
     return appointmentData;
@@ -94,19 +91,19 @@ async function updateAppointmentInArray(
   ivAssignedByUserName
 ) {
   try {
-    console.log("repository");
+    console.log('repository');
     const doc = await Appointment.findOne({ officeName: officeName });
     if (!doc) {
-      throw new Error("Office not found");
+      throw new Error('Office not found');
     }
     const appointmentIndex = doc.appointments.findIndex(
       (appointment) => appointment._id.toString() === appointmentId
     );
-    console.log("appointmentIndex", appointmentIndex);
+    console.log('appointmentIndex', appointmentIndex);
     if (appointmentIndex === -1) {
-      throw new Error("Appointment not found");
+      throw new Error('Appointment not found');
     }
-    console.log("doc _id", doc._id);
+    console.log('doc _id', doc._id);
     const result = await Appointment.updateOne(
       { _id: doc._id },
       {
@@ -121,7 +118,7 @@ async function updateAppointmentInArray(
         },
       }
     );
-    console.log("result in repository", result);
+    console.log('result in repository', result);
     return result;
   } catch (error) {
     console.error(
@@ -131,28 +128,118 @@ async function updateAppointmentInArray(
   }
 }
 
-async function getAssignedCountsByOffice(officeName) {
+async function getAssignedCountsByOffice(officeName, startDate, endDate) {
   try {
-    const pipeline = [
+    // Convert dates to UTC Date objects to avoid timezone issues
+    const startDateObj = new Date(startDate + 'T00:00:00.000Z'); // Force UTC start of day
+    const endDateObj = new Date(endDate + 'T23:59:59.999Z'); // Force UTC end of day
+
+    console.log('Date range for assigned counts:', {
+      officeName,
+      startDate,
+      endDate,
+      startDateObj: startDateObj.toISOString(),
+      endDateObj: endDateObj.toISOString(),
+    });
+
+    // First, get the complete appointment data
+    const completeDataPipeline = [
       { $match: { officeName: officeName } },
-      { $unwind: "$appointments" }, // Flatten the appointments array
-      { $match: { "appointments.status": "Assigned" } }, // Now filter based on the unwound appointments
-      { $match: { "appointments.completionStatus": { $ne: "Completed" } } }, // Exclude appointments with completionStatus equal to 'Completed'
+      { $unwind: '$appointments' }, // Flatten the appointments array
+      {
+        $match: {
+          'appointments.assignedUser': { $exists: true, $ne: null },
+          'appointments.ivAssignedDate': {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+        },
+      }, // Filter by assignedUser exists and ivAssignedDate range
+      {
+        $project: {
+          _id: '$appointments._id',
+          appointmentType: '$appointments.appointmentType',
+          appointmentDate: '$appointments.appointmentDate',
+          appointmentTime: '$appointments.appointmentTime',
+          patientId: '$appointments.patientId',
+          patientName: '$appointments.patientName',
+          patientDOB: '$appointments.patientDOB',
+          insuranceName: '$appointments.insuranceName',
+          insurancePhone: '$appointments.insurancePhone',
+          policyHolderName: '$appointments.policyHolderName',
+          policyHolderDOB: '$appointments.policyHolderDOB',
+          memberId: '$appointments.memberId',
+          employerName: '$appointments.employerName',
+          groupNumber: '$appointments.groupNumber',
+          relationWithPatient: '$appointments.relationWithPatient',
+          medicaidId: '$appointments.medicaidId',
+          carrierId: '$appointments.carrierId',
+          confirmationStatus: '$appointments.confirmationStatus',
+          cellPhone: '$appointments.cellPhone',
+          homePhone: '$appointments.homePhone',
+          workPhone: '$appointments.workPhone',
+          ivType: '$appointments.ivType',
+          completionStatus: '$appointments.completionStatus',
+          status: '$appointments.status',
+          assignedUser: '$appointments.assignedUser',
+          source: '$appointments.source',
+          planType: '$appointments.planType',
+          ivRemarks: '$appointments.ivRemarks',
+          provider: '$appointments.provider',
+          noteRemarks: '$appointments.noteRemarks',
+          ivCompletedDate: '$appointments.ivCompletedDate',
+          ivAssignedDate: '$appointments.ivAssignedDate',
+          ivRequestedDate: '$appointments.ivRequestedDate',
+          ivAssignedByUserName: '$appointments.ivAssignedByUserName',
+          completedBy: '$appointments.completedBy',
+          office: '$officeName',
+        },
+      },
+      { $sort: { ivAssignedDate: -1 } },
+    ];
+
+    // Get the complete data
+    const completeData = await Appointment.aggregate(completeDataPipeline);
+
+    // Calculate counts from the complete data
+    const countsPipeline = [
+      { $match: { officeName: officeName } },
+      { $unwind: '$appointments' }, // Flatten the appointments array
+      {
+        $match: {
+          'appointments.assignedUser': { $exists: true, $ne: null },
+          'appointments.ivAssignedDate': {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+        },
+      }, // Filter by assignedUser exists and ivAssignedDate range
       {
         $group: {
-          _id: "$appointments.assignedUser", // Group by assignedUser within appointments
+          _id: '$appointments.assignedUser', // Group by assignedUser within appointments
           count: { $sum: 1 },
         },
       },
       { $sort: { _id: 1 } },
     ];
-    console.log(pipeline);
-    const counts = await Appointment.aggregate(pipeline);
-    console.log(counts);
-    return counts.reduce((acc, curr) => {
+
+    console.log(
+      'Assigned counts pipeline:',
+      JSON.stringify(countsPipeline, null, 2)
+    );
+    const counts = await Appointment.aggregate(countsPipeline);
+    console.log('Assigned counts result:', counts);
+    console.log('Complete data count:', completeData.length);
+
+    const countsObject = counts.reduce((acc, curr) => {
       acc[curr._id] = curr.count;
       return acc;
     }, {});
+
+    return {
+      counts: countsObject,
+      completeData: completeData,
+    };
   } catch (error) {
     console.error(
       `Error fetching assigned counts for office: ${officeName}`,
@@ -174,23 +261,23 @@ async function fetchAppointmentsByOfficeAndRemarks(
     endDateDate.setDate(endDateDate.getDate() + 1); // Include the end date in the range
     endDateDate.setHours(0, 0, 0, 0); // Reset time to start of the next day
     const endDateISO = endDateDate.toISOString();
-    console.log("remarks", remarks);
+    console.log('remarks', remarks);
     const appointments = await Appointment.aggregate([
       { $match: { officeName: officeName } },
-      { $unwind: "$appointments" },
+      { $unwind: '$appointments' },
       {
         $match: {
           $and: [
             {
-              "appointments.appointmentDate": {
+              'appointments.appointmentDate': {
                 $gte: new Date(startDateISO),
                 $lt: new Date(endDateISO),
               },
             },
             {
               $or: [
-                { "appointments.ivRemarks": { $in: remarks } },
-                { "appointments.ivRemarks": { $exists: false } },
+                { 'appointments.ivRemarks': { $in: remarks } },
+                { 'appointments.ivRemarks': { $exists: false } },
               ],
             },
           ],
@@ -198,14 +285,14 @@ async function fetchAppointmentsByOfficeAndRemarks(
       },
       {
         $group: {
-          _id: "$appointments._id",
-          appointment: { $first: "$appointments" },
-          officeName: { $first: "$officeName" },
+          _id: '$appointments._id',
+          appointment: { $first: '$appointments' },
+          officeName: { $first: '$officeName' },
         },
       },
       {
         $replaceRoot: {
-          newRoot: { $mergeObjects: ["$$ROOT", "$appointment"] },
+          newRoot: { $mergeObjects: ['$$ROOT', '$appointment'] },
         },
       },
       {
@@ -213,7 +300,7 @@ async function fetchAppointmentsByOfficeAndRemarks(
           _id: 0,
           appointmentType: 1,
           appointmentDate: {
-            $dateToString: { format: "%Y-%m-%d", date: "$appointmentDate" },
+            $dateToString: { format: '%Y-%m-%d', date: '$appointmentDate' },
           },
           appointmentTime: 1,
           patientId: 1,
@@ -238,10 +325,10 @@ async function fetchAppointmentsByOfficeAndRemarks(
           status: 1,
           assignedUser: 1,
           provider: 1,
-          office: "$officeName",
+          office: '$officeName',
           ivRemarks: 1,
           planType: 1,
-          _id: "$appointment._id",
+          _id: '$appointment._id',
         },
       },
     ]);
