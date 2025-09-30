@@ -9,6 +9,7 @@ const imageUploadRoutes = require('./routes/fileUpload-routes.js');
 const googleSheetsRoutes = require('./routes/googleSheetsRoutes.js');
 const userUpdateRoutes = require('./routes/user-update-routes.js');
 const officeDataRoutes = require('./routes/officeData-routes.js');
+const attendanceRoutes = require('./routes/attendance-routes.js');
 const cors = require('cors');
 
 const setupJob = require('./cronJobs/appointmentFetcher');
@@ -31,6 +32,7 @@ app.use('/api/image-upload', imageUploadRoutes);
 app.use('/api/spreadsheet', googleSheetsRoutes);
 app.use('/api/user-update', userUpdateRoutes);
 app.use('/api/office-data', officeDataRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 app.get('/ping', (req, res) => {
   return res.json({ message: `IV Tool Backend Service is alive` });
