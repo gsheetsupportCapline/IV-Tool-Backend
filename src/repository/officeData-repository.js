@@ -46,18 +46,18 @@ const OfficeDataRepository = {
             pipeline: [
               {
                 $match: {
-                  $expr: { $eq: ['$_id', '$$assignedUserId'] }
-                }
+                  $expr: { $eq: ['$_id', '$$assignedUserId'] },
+                },
               },
               {
                 $project: {
                   name: 1,
-                  _id: 0
-                }
-              }
+                  _id: 0,
+                },
+              },
             ],
-            as: 'userDetails'
-          }
+            as: 'userDetails',
+          },
         },
 
         // Add computed field for assignedUserName
@@ -67,15 +67,15 @@ const OfficeDataRepository = {
               $cond: {
                 if: { $gt: [{ $size: '$userDetails' }, 0] },
                 then: { $arrayElemAt: ['$userDetails.name', 0] },
-                else: 'Unknown User'
-              }
-            }
-          }
+                else: 'Unknown User',
+              },
+            },
+          },
         },
 
         // Remove the temporary userDetails field
         {
-          $unset: 'userDetails'
+          $unset: 'userDetails',
         },
 
         // Sort by date and time
