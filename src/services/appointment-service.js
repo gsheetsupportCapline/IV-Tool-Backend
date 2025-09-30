@@ -581,6 +581,82 @@ async function getAppointmentsByOfficeAndRemarks(
   }
 }
 
+async function getAppointmentCompletionAnalysis(
+  startDate,
+  endDate,
+  dateType = 'appointmentDate',
+  ivType = 'Normal'
+) {
+  try {
+    // Validate dateType
+    if (!['appointmentDate', 'ivCompletedDate'].includes(dateType)) {
+      throw new Error(
+        "Invalid dateType. Must be 'appointmentDate' or 'ivCompletedDate'"
+      );
+    }
+
+    // Validate ivType
+    if (!['Normal', 'Rush'].includes(ivType)) {
+      throw new Error("Invalid ivType. Must be 'Normal' or 'Rush'");
+    }
+
+    // Validate date format
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      throw new Error('Invalid date format. Please use YYYY-MM-DD format');
+    }
+
+    if (startDateObj > endDateObj) {
+      throw new Error('startDate cannot be later than endDate');
+    }
+
+    console.log('Appointment completion analysis request:', {
+      startDate,
+      endDate,
+      dateType,
+      ivType,
+    });
+
+    const analysisData =
+      await AppointmentRepository.getAppointmentCompletionAnalysis(
+        startDate,
+        endDate,
+        dateType,
+        ivType
+      );
+
+    return {
+      success: true,
+      data: analysisData,
+      summary: {
+        totalOffices: analysisData.length,
+        dateRange: { startDate, endDate },
+        filters: { dateType, ivType },
+      },
+    };
+  } catch (error) {
+    console.error(
+      'Error at service layer in appointment completion analysis:',
+      error
+    );
+    throw error;
+  }
+}
+
+async function debugAppointmentData(officeName) {
+  try {
+    const debugData = await AppointmentRepository.debugAppointmentData(
+      officeName
+    );
+    return debugData;
+  } catch (error) {
+    console.error('Error at service layer in debug appointment data:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -592,4 +668,6 @@ module.exports = {
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsCountByUser,
   getAppointmentsByOfficeAndRemarks,
+  getAppointmentCompletionAnalysis,
+  debugAppointmentData,
 };

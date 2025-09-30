@@ -341,10 +341,359 @@ async function fetchAppointmentsByOfficeAndRemarks(
     throw error;
   }
 }
+// Debug function to understand data structure
+async function debugAppointmentData(officeName = 'Tidwell') {
+  try {
+    const sample = await Appointment.aggregate([
+      { $match: { officeName: officeName } },
+      { $unwind: '$appointments' },
+      {
+        $match: {
+          'appointments.ivCompletedDate': { $exists: true, $ne: null, $ne: '' },
+        },
+      },
+      {
+        $project: {
+          appointmentType: '$appointments.appointmentType',
+          appointmentDate: '$appointments.appointmentDate',
+          appointmentTime: '$appointments.appointmentTime',
+          ivType: '$appointments.ivType',
+          ivCompletedDate: '$appointments.ivCompletedDate',
+          ivCompletedDateType: { $type: '$appointments.ivCompletedDate' },
+        },
+      },
+      { $limit: 5 },
+    ]);
+
+    console.log('Sample appointment data:', JSON.stringify(sample, null, 2));
+    return sample;
+  } catch (error) {
+    console.error('Error in debug function:', error);
+    throw error;
+  }
+}
+
+async function getAppointmentCompletionAnalysis(
+  startDate,
+  endDate,
+  dateType,
+  ivType
+) {
+  try {
+    // Convert dates to UTC Date objects to avoid timezone issues
+    const startDateObj = new Date(startDate + 'T00:00:00.000Z');
+    const endDateObj = new Date(endDate + 'T23:59:59.999Z');
+
+    console.log('Appointment completion analysis parameters:', {
+      startDate,
+      endDate,
+      dateType,
+      ivType,
+      startDateObj: startDateObj.toISOString(),
+      endDateObj: endDateObj.toISOString(),
+    });
+
+    // Determine the field name based on dateType
+    const dateFieldName =
+      dateType === 'ivCompletedDate'
+        ? 'appointments.ivCompletedDate'
+        : 'appointments.appointmentDate';
+
+    // Define office names
+    const officeNames = [
+      'Aransas',
+      'Azle',
+      'Beaumont',
+      'Benbrook',
+      'Calallen',
+      'Crosby',
+      'Devine',
+      'Elgin',
+      'Grangerland',
+      'Huffman',
+      'Jasper',
+      'Lavaca',
+      'Liberty',
+      'Lytle',
+      'Mathis',
+      'Potranco',
+      'Rio Bravo',
+      'Riverwalk',
+      'Rockdale',
+      'Sinton',
+      'Splendora',
+      'Springtown',
+      'Tidwell',
+      'Victoria',
+      'Westgreen',
+      'Winnie',
+      'OS',
+    ];
+
+    const results = [];
+
+    for (const officeName of officeNames) {
+      // First get total completed IVs for this office (same for both categories)
+      const totalCompletedPipeline = [
+        { $match: { officeName: officeName } },
+        { $unwind: '$appointments' },
+        {
+          $match: {
+            'appointments.ivCompletedDate': {
+              $exists: true,
+              $ne: null,
+              $ne: '',
+            },
+            'appointments.ivType': ivType,
+            [dateFieldName]: {
+              $gte: startDateObj,
+              $lte: endDateObj,
+            },
+          },
+        },
+        {
+          $count: 'totalCount',
+        },
+      ];
+
+      const totalResult = await Appointment.aggregate(totalCompletedPipeline);
+      const totalCompletedIVs =
+        totalResult.length > 0 ? totalResult[0].totalCount : 0;
+
+      console.log(
+        `Office: ${officeName}, Total completed IVs: ${totalCompletedIVs}`
+      );
+
+      // Main analysis pipeline
+      const pipeline = [
+        { $match: { officeName: officeName } },
+        { $unwind: '$appointments' },
+        {
+          $match: {
+            'appointments.ivCompletedDate': {
+              $exists: true,
+              $ne: null,
+              $ne: '',
+            },
+            'appointments.ivType': ivType,
+            [dateFieldName]: {
+              $gte: startDateObj,
+              $lte: endDateObj,
+            },
+          },
+        },
+        {
+          $addFields: {
+            // Create appointment datetime by combining date and time - handle null/undefined appointmentTime
+            appointmentDateTime: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ['$appointments.appointmentTime', null] },
+                    { $ne: ['$appointments.appointmentTime', ''] },
+                  ],
+                },
+                {
+                  $dateFromString: {
+                    dateString: {
+                      $concat: [
+                        {
+                          $dateToString: {
+                            format: '%Y-%m-%d',
+                            date: '$appointments.appointmentDate',
+                          },
+                        },
+                        'T',
+                        {
+                          $cond: [
+                            {
+                              $gte: [
+                                { $strLenCP: '$appointments.appointmentTime' },
+                                8,
+                              ],
+                            },
+                            {
+                              $substr: ['$appointments.appointmentTime', 0, 8],
+                            },
+                            '$appointments.appointmentTime',
+                          ],
+                        },
+                        ':00.000Z',
+                      ],
+                    },
+                    onError: '$appointments.appointmentDate',
+                  },
+                },
+                '$appointments.appointmentDate',
+              ],
+            },
+            // Parse ivCompletedDate - handle both Date and String types
+            completedDateTime: {
+              $cond: [
+                { $eq: [{ $type: '$appointments.ivCompletedDate' }, 'date'] },
+                '$appointments.ivCompletedDate',
+                {
+                  $dateFromString: {
+                    dateString: '$appointments.ivCompletedDate',
+                    onError: null,
+                  },
+                },
+              ],
+            },
+            // Check if appointment type is new patient related - improved regex and null handling
+            isNewPatient: {
+              $cond: [
+                { $ne: ['$appointments.appointmentType', null] },
+                {
+                  $regexMatch: {
+                    input: { $toLower: '$appointments.appointmentType' },
+                    regex: /^(np|np\/srp|new patient|np \/ srp|np\/ srp|new)$/i,
+                  },
+                },
+                false,
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            completedDateTime: { $ne: null },
+          },
+        },
+        {
+          $addFields: {
+            // Check if completed after appointment time
+            completedAfterAppointment: {
+              $gt: ['$completedDateTime', '$appointmentDateTime'],
+            },
+            // Check if completed within 1 hour
+            completedWithinOneHour: {
+              $and: [
+                { $gt: ['$completedDateTime', '$appointmentDateTime'] },
+                {
+                  $lte: [
+                    {
+                      $subtract: ['$completedDateTime', '$appointmentDateTime'],
+                    },
+                    3600000, // 1 hour in milliseconds
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              officeName: '$officeName',
+              isNewPatient: '$isNewPatient',
+            },
+            appointmentCount: { $sum: 1 },
+            completedAfterAppointmentCount: {
+              $sum: { $cond: ['$completedAfterAppointment', 1, 0] },
+            },
+            completedWithinOneHourCount: {
+              $sum: { $cond: ['$completedWithinOneHour', 1, 0] },
+            },
+            // Debug data
+            sampleData: {
+              $push: {
+                appointmentType: '$appointments.appointmentType',
+                appointmentTime: '$appointments.appointmentTime',
+                ivCompletedDate: '$appointments.ivCompletedDate',
+                isNewPatient: '$isNewPatient',
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            afterAppointmentCompletionPercentage: {
+              $cond: [
+                { $gt: ['$appointmentCount', 0] },
+                {
+                  $multiply: [
+                    {
+                      $divide: [
+                        '$completedAfterAppointmentCount',
+                        '$appointmentCount',
+                      ],
+                    },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+          },
+        },
+      ];
+
+      const officeResults = await Appointment.aggregate(pipeline);
+
+      console.log(
+        `Office: ${officeName}, Pipeline results:`,
+        JSON.stringify(officeResults, null, 2)
+      );
+
+      // Initialize office data structure with total count
+      const officeData = {
+        officeName: officeName,
+        totalCompletedIVs: totalCompletedIVs, // Same for both categories
+        newPatient: {
+          completedAfterAppointmentCount: 0,
+          completedWithinOneHourCount: 0,
+          afterAppointmentCompletionPercentage: 0,
+        },
+        others: {
+          completedAfterAppointmentCount: 0,
+          completedWithinOneHourCount: 0,
+          afterAppointmentCompletionPercentage: 0,
+        },
+      };
+
+      // Process results
+      officeResults.forEach((result) => {
+        if (result._id.isNewPatient) {
+          officeData.newPatient = {
+            completedAfterAppointmentCount:
+              result.completedAfterAppointmentCount,
+            completedWithinOneHourCount: result.completedWithinOneHourCount,
+            afterAppointmentCompletionPercentage:
+              Math.round(result.afterAppointmentCompletionPercentage * 100) /
+              100,
+          };
+        } else {
+          officeData.others = {
+            completedAfterAppointmentCount:
+              result.completedAfterAppointmentCount,
+            completedWithinOneHourCount: result.completedWithinOneHourCount,
+            afterAppointmentCompletionPercentage:
+              Math.round(result.afterAppointmentCompletionPercentage * 100) /
+              100,
+          };
+        }
+      });
+
+      results.push(officeData);
+    }
+
+    console.log(
+      `Appointment completion analysis completed for ${results.length} offices`
+    );
+    return results;
+  } catch (error) {
+    console.error('Error in appointment completion analysis:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
   updateAppointmentInArray,
   getAssignedCountsByOffice,
   fetchAppointmentsByOfficeAndRemarks,
+  getAppointmentCompletionAnalysis,
+  debugAppointmentData,
 };

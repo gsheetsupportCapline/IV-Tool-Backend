@@ -384,6 +384,115 @@ const getAppointmentsByOfficeAndRemarks = async (req, res) => {
   }
 };
 
+const getAppointmentCompletionAnalysis = async (req, res) => {
+  try {
+    const { startDate, endDate, dateType, ivType } = req.query;
+
+    // Validate required fields
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required query parameters',
+      });
+    }
+
+    // Validate dateType parameter
+    if (
+      dateType &&
+      !['appointmentDate', 'ivCompletedDate'].includes(dateType)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid dateType. Must be 'appointmentDate' or 'ivCompletedDate'",
+      });
+    }
+
+    // Validate ivType parameter
+    if (ivType && !['Normal', 'Rush'].includes(ivType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ivType. Must be 'Normal' or 'Rush'",
+      });
+    }
+
+    // Default values
+    const selectedDateType = dateType || 'appointmentDate';
+    const selectedIvType = ivType || 'Normal';
+
+    // Validate date format
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Please use YYYY-MM-DD format',
+      });
+    }
+
+    if (startDateObj > endDateObj) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate cannot be later than endDate',
+      });
+    }
+
+    const result = await AppointmentService.getAppointmentCompletionAnalysis(
+      startDate,
+      endDate,
+      selectedDateType,
+      selectedIvType
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      summary: result.summary,
+      filters: {
+        startDate,
+        endDate,
+        dateType: selectedDateType,
+        ivType: selectedIvType,
+      },
+    });
+  } catch (error) {
+    console.error(
+      'Error at controller layer in appointment completion analysis:',
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message:
+        error.message || 'Failed to fetch appointment completion analysis',
+    });
+  }
+};
+
+const debugAppointmentData = async (req, res) => {
+  try {
+    const { officeName } = req.query;
+    const debugData = await AppointmentService.debugAppointmentData(
+      officeName || 'Tidwell'
+    );
+
+    res.status(200).json({
+      success: true,
+      data: debugData,
+      message: 'Debug data retrieved successfully',
+    });
+  } catch (error) {
+    console.error(
+      'Error at controller layer in debug appointment data:',
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch debug data',
+    });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -395,4 +504,6 @@ module.exports = {
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsByOffice,
   getAppointmentsByOfficeAndRemarks,
+  getAppointmentCompletionAnalysis,
+  debugAppointmentData,
 };

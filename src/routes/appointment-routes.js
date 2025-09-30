@@ -54,4 +54,11 @@ router.get(
   AppointmentController.getAppointmentsByOfficeAndRemarks
 );
 
+router.get(
+  '/completion-analysis',
+  AppointmentController.getAppointmentCompletionAnalysis
+);
+
+router.get('/debug-data', AppointmentController.debugAppointmentData);
+
 module.exports = router;
