@@ -50,7 +50,8 @@ const OfficeDataService = {
         ivType: appointment.ivType,
         status: appointment.status,
         completionStatus: appointment.completionStatus,
-        assignedUser: appointment.assignedUser,
+        assignedUser: appointment.assignedUser, // Keep the original ID for reference
+        assignedUserName: appointment.assignedUserName, // Add the user name
         ivRemarks: appointment.ivRemarks,
         source: appointment.source,
         planType: appointment.planType,

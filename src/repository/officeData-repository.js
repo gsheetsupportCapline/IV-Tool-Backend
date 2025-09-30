@@ -38,6 +38,46 @@ const OfficeDataRepository = {
           $replaceRoot: { newRoot: '$appointments' },
         },
 
+        // Lookup user details from users collection
+        {
+          $lookup: {
+            from: 'users', // Name of the users collection
+            let: { assignedUserId: { $toObjectId: '$assignedUser' } }, // Convert string ID to ObjectId
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$_id', '$$assignedUserId'] }
+                }
+              },
+              {
+                $project: {
+                  name: 1,
+                  _id: 0
+                }
+              }
+            ],
+            as: 'userDetails'
+          }
+        },
+
+        // Add computed field for assignedUserName
+        {
+          $addFields: {
+            assignedUserName: {
+              $cond: {
+                if: { $gt: [{ $size: '$userDetails' }, 0] },
+                then: { $arrayElemAt: ['$userDetails.name', 0] },
+                else: 'Unknown User'
+              }
+            }
+          }
+        },
+
+        // Remove the temporary userDetails field
+        {
+          $unset: 'userDetails'
+        },
+
         // Sort by date and time
         {
           $sort: {
