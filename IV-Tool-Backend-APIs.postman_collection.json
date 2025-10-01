@@ -1,0 +1,851 @@
+{
+  "info": {
+    "name": "IV Tool Backend APIs - Correct Version",
+    "description": "Complete collection of ACTUAL IV Tool Backend APIs based on real route files",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🧑‍💼 Attendance APIs",
+      "item": [
+        {
+          "name": "Get All Active Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/active-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "active-users"]
+            },
+            "description": "Get all active users for attendance marking"
+          }
+        },
+        {
+          "name": "Get Attendance by Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/by-date?date=2025-10-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "by-date"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2025-10-01",
+                  "description": "Date in YYYY-MM-DD format"
+                }
+              ]
+            },
+            "description": "Get attendance records for a specific date"
+          }
+        },
+        {
+          "name": "Save Single Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"670123456789abcdef123456\",\n  \"date\": \"2025-10-01\",\n  \"attendance\": \"Present\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/save",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "save"]
+            },
+            "description": "Save or update single attendance record"
+          }
+        },
+        {
+          "name": "Save Bulk Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"attendanceData\": [\n    {\n      \"userId\": \"670123456789abcdef123456\",\n      \"date\": \"2025-10-01\",\n      \"attendance\": \"Present\"\n    },\n    {\n      \"userId\": \"670123456789abcdef123457\",\n      \"date\": \"2025-10-01\",\n      \"attendance\": \"Absent\"\n    },\n    {\n      \"userId\": \"670123456789abcdef123458\",\n      \"date\": \"2025-10-01\",\n      \"attendance\": \"Half\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/bulk-save",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "bulk-save"]
+            },
+            "description": "Save multiple attendance records in bulk"
+          }
+        },
+        {
+          "name": "Get User Attendance in Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/user/670123456789abcdef123456?startDate=2025-10-01&endDate=2025-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "user", "670123456789abcdef123456"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-10-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-10-31"
+                }
+              ]
+            },
+            "description": "Get attendance records for a specific user within date range"
+          }
+        },
+        {
+          "name": "Get Attendance Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/summary?startDate=2025-10-01&endDate=2025-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "summary"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-10-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-10-31"
+                }
+              ]
+            },
+            "description": "Get attendance summary for all users in date range"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Appointment APIs",
+      "item": [
+        {
+          "name": "Fetch and Save Appointments",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/fetch-and-save-appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "fetch-and-save-appointments"]
+            },
+            "description": "Fetch appointments from external source and save to database"
+          }
+        },
+        {
+          "name": "Get Appointments by Office",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/fetch-appointments/Tidwell?startDate=2025-09-01&endDate=2025-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "fetch-appointments", "Tidwell"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                }
+              ]
+            },
+            "description": "Get appointments for a specific office within date range"
+          }
+        },
+        {
+          "name": "Update Appointment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"670123456789abcdef123456\",\n  \"status\": \"Assigned\",\n  \"completionStatus\": \"In Process\",\n  \"ivAssignedDate\": \"2025-10-01T10:30:00Z\",\n  \"ivAssignedByUserName\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/update-appointments/Tidwell/670123456789abcdef123456",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "appointments",
+                "update-appointments",
+                "Tidwell",
+                "670123456789abcdef123456"
+              ]
+            },
+            "description": "Update appointment status and assignment"
+          }
+        },
+        {
+          "name": "Create Rush Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentDate\": \"2025-10-01\",\n  \"appointmentTime\": \"14:30\",\n  \"provider\": \"Dr. Smith\",\n  \"patientId\": \"P12345\",\n  \"patientDOB\": \"1990-05-15\",\n  \"patientName\": \"Jane Doe\",\n  \"policyHolderName\": \"Jane Doe\",\n  \"policyHolderDOB\": \"1990-05-15\",\n  \"MIDSSN\": \"123-45-6789\",\n  \"insuranceName\": \"Blue Cross\",\n  \"insurancePhone\": \"1-800-123-4567\",\n  \"ivRequestedDate\": \"2025-09-30T12:00:00Z\",\n  \"imageUrl\": \"https://example.com/image.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/create-new-appointment/Tidwell",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "appointments",
+                "create-new-appointment",
+                "Tidwell"
+              ]
+            },
+            "description": "Create a new rush appointment"
+          }
+        },
+        {
+          "name": "Get User Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/user-appointments/670123456789abcdef123456?startDate=2025-09-01&endDate=2025-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "appointments",
+                "user-appointments",
+                "670123456789abcdef123456"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                }
+              ]
+            },
+            "description": "Get appointments assigned to a specific user"
+          }
+        },
+        {
+          "name": "Update Appointment Details",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"670123456789abcdef123456\",\n  \"ivRemarks\": \"Completed successfully\",\n  \"source\": \"Web\",\n  \"planType\": \"HMO\",\n  \"completedBy\": \"John Doe\",\n  \"noteRemarks\": \"Patient was cooperative\",\n  \"ivCompletedDate\": \"2025-10-01T15:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/update-individual-appointment-details",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "appointments",
+                "update-individual-appointment-details"
+              ]
+            },
+            "description": "Update individual appointment details and mark as completed"
+          }
+        },
+        {
+          "name": "Get Assigned Counts by Office",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/assigned-counts/Tidwell?startDate=2025-09-01&endDate=2025-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "assigned-counts", "Tidwell"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                }
+              ]
+            },
+            "description": "Get assigned appointment counts by user for an office"
+          }
+        },
+        {
+          "name": "Get Unassigned Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/fetch-unassigned-appointments?startDate=2025-09-01&endDate=2025-09-30&dateType=appointmentDate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "fetch-unassigned-appointments"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                },
+                {
+                  "key": "dateType",
+                  "value": "appointmentDate",
+                  "description": "appointmentDate or ivAssignedDate"
+                }
+              ]
+            },
+            "description": "Get unassigned appointments in date range"
+          }
+        },
+        {
+          "name": "Get Completed Appointments by Office",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/completed-appointments?startDate=2025-09-01&endDate=2025-09-30&dateType=ivCompletedDate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "completed-appointments"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                },
+                {
+                  "key": "dateType",
+                  "value": "ivCompletedDate",
+                  "description": "appointmentDate or ivCompletedDate"
+                }
+              ]
+            },
+            "description": "Get completed appointments count by user for all offices"
+          }
+        },
+        {
+          "name": "Get Appointments by Office and Remarks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/appointments-by-office-and-remarks?officeName=Tidwell&startDate=2025-09-01&endDate=2025-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "appointments",
+                "appointments-by-office-and-remarks"
+              ],
+              "query": [
+                {
+                  "key": "officeName",
+                  "value": "Tidwell"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                }
+              ]
+            },
+            "description": "Get appointments by office and specific remarks"
+          }
+        },
+        {
+          "name": "Get Appointment Completion Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/completion-analysis?startDate=2025-09-01&endDate=2025-09-30&dateType=appointmentDate&ivType=Normal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "completion-analysis"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-09-30"
+                },
+                {
+                  "key": "dateType",
+                  "value": "appointmentDate",
+                  "description": "appointmentDate or ivCompletedDate"
+                },
+                {
+                  "key": "ivType",
+                  "value": "Normal",
+                  "description": "Normal or Rush"
+                }
+              ]
+            },
+            "description": "Get comprehensive appointment completion analysis for all offices"
+          }
+        },
+        {
+          "name": "Debug Appointment Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/debug-data?officeName=Tidwell",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "debug-data"],
+              "query": [
+                {
+                  "key": "officeName",
+                  "value": "Tidwell"
+                }
+              ]
+            },
+            "description": "Debug endpoint to check appointment data structure"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Auth & User APIs",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\",\n  \"assignedOffice\": \"Tidwell\",\n  \"isActive\": true,\n  \"shiftTime\": \"8PM-5AM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "signup"]
+            },
+            "description": "Register/signup new user"
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "User login"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "users"]
+            },
+            "description": "Get all users in the system"
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer <your-jwt-token>"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            },
+            "description": "Get authenticated user profile (requires JWT token)"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated\",\n  \"email\": \"john.updated@example.com\",\n  \"role\": \"admin\",\n  \"assignedOffice\": \"Beaumont\",\n  \"isActive\": true,\n  \"shiftTime\": \"9AM-6PM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user-update/670123456789abcdef123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user-update", "670123456789abcdef123456"]
+            },
+            "description": "Update user details"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Office APIs",
+      "item": [
+        {
+          "name": "Create Office",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Office\",\n  \"location\": \"City, State\",\n  \"phone\": \"123-456-7890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/offices/office",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offices", "office"]
+            },
+            "description": "Create a new office"
+          }
+        },
+        {
+          "name": "Get Office by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/offices/office/670123456789abcdef123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offices", "office", "670123456789abcdef123456"]
+            },
+            "description": "Get office by ID"
+          }
+        },
+        {
+          "name": "Get All Offices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/offices/office",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offices", "office"]
+            },
+            "description": "Get all offices in the system"
+          }
+        },
+        {
+          "name": "Update Office",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Office Name\",\n  \"location\": \"Updated Location\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/offices/office/670123456789abcdef123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offices", "office", "670123456789abcdef123456"]
+            },
+            "description": "Update office details"
+          }
+        },
+        {
+          "name": "Delete Office",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/offices/office/670123456789abcdef123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offices", "office", "670123456789abcdef123456"]
+            },
+            "description": "Delete office by ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Office Data APIs",
+      "item": [
+        {
+          "name": "Get Office Data by Date Range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2025-09-01\",\n  \"endDate\": \"2025-09-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/office-data/office-data-by-date-range",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "office-data", "office-data-by-date-range"]
+            },
+            "description": "Get comprehensive office data by date range (max 31 days)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "� Dropdown Values APIs",
+      "item": [
+        {
+          "name": "Add Dropdown Options",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"status\",\n  \"options\": [\"Active\", \"Inactive\", \"Pending\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dropdownValues/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dropdownValues", "add"]
+            },
+            "description": "Add dropdown options for a category"
+          }
+        },
+        {
+          "name": "Get Dropdown Values by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dropdownValues/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dropdownValues", "status"]
+            },
+            "description": "Get dropdown values for a specific category"
+          }
+        },
+        {
+          "name": "Get All Dropdown Values",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dropdownValues/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dropdownValues", ""]
+            },
+            "description": "Get all dropdown values for all categories"
+          }
+        },
+        {
+          "name": "Delete Dropdown Options",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"status\",\n  \"options\": [\"Pending\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dropdownValues/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dropdownValues", "delete"]
+            },
+            "description": "Delete specific dropdown options"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 File Upload APIs",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image file to upload"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/image-upload/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "image-upload", "upload"]
+            },
+            "description": "Upload image file"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Google Sheets APIs",
+      "item": [
+        {
+          "name": "Update Google Sheet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sheetId\": \"your-sheet-id\",\n  \"range\": \"A1:C10\",\n  \"values\": [[\"Name\", \"Email\", \"Phone\"], [\"John\", \"john@example.com\", \"123-456-7890\"]]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/spreadsheet/gsheet/updategsheet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "spreadsheet", "gsheet", "updategsheet"]
+            },
+            "description": "Update Google Sheet with data"
+          }
+        },
+        {
+          "name": "Read Google Sheet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additionalData\": \"any additional data needed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/spreadsheet/gsheet/readgsheet/your-sheet-id/A1:C10",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "spreadsheet",
+                "gsheet",
+                "readgsheet",
+                "your-sheet-id",
+                "A1:C10"
+              ]
+            },
+            "description": "Read data from Google Sheet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 System Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["ping"]
+            },
+            "description": "Check if the service is alive"
+          }
+        }
+      ]
+    }
+  ]
+}

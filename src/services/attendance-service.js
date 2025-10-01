@@ -16,19 +16,34 @@ async function getAttendanceByDate(date) {
     );
 
     // Format the response to make it easier to use
-    const formattedRecords = attendanceRecords.map((record) => ({
-      userId: record.userId._id,
-      userName: record.userId.name,
-      userEmail: record.userId.email,
-      userRole: record.userId.role,
-      assignedOffice: record.userId.assignedOffice,
-      isActive: record.userId.isActive,
-      shiftTime: record.userId.shiftTime,
-      date: record.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
-      attendance: record.attendance,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    }));
+    // Filter out records where user reference is missing
+    const formattedRecords = attendanceRecords
+      .filter((record) => record.userId && record.userId._id)
+      .map((record) => ({
+        userId: record.userId._id,
+        userName: record.userId.name,
+        userEmail: record.userId.email,
+        userRole: record.userId.role,
+        assignedOffice: record.userId.assignedOffice,
+        isActive: record.userId.isActive,
+        shiftTime: record.userId.shiftTime,
+        date: record.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        attendance: record.attendance,
+        assigned: {
+          count: record.assigned?.count || 0,
+          appointmentIds: record.assigned?.appointmentIds || [],
+        },
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+      }));
+
+    // Log if we found orphaned records
+    const orphanedCount = attendanceRecords.length - formattedRecords.length;
+    if (orphanedCount > 0) {
+      console.log(
+        `Warning: Found ${orphanedCount} attendance records with missing user references for date: ${date}`
+      );
+    }
 
     return {
       success: true,
@@ -92,6 +107,10 @@ async function saveOrUpdateAttendance(userId, date, attendance) {
         shiftTime: result.userId.shiftTime,
         date: result.date.toISOString().split('T')[0],
         attendance: result.attendance,
+        assigned: {
+          count: result.assigned?.count || 0,
+          appointmentIds: result.assigned?.appointmentIds || [],
+        },
         createdAt: result.createdAt,
         updatedAt: result.updatedAt,
       },
@@ -203,19 +222,34 @@ async function getUserAttendanceInRange(userId, startDate, endDate) {
       );
 
     // Format the response
-    const formattedRecords = attendanceRecords.map((record) => ({
-      userId: record.userId._id,
-      userName: record.userId.name,
-      userEmail: record.userId.email,
-      userRole: record.userId.role,
-      assignedOffice: record.userId.assignedOffice,
-      isActive: record.userId.isActive,
-      shiftTime: record.userId.shiftTime,
-      date: record.date.toISOString().split('T')[0],
-      attendance: record.attendance,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    }));
+    // Filter out records where user reference is missing
+    const formattedRecords = attendanceRecords
+      .filter((record) => record.userId && record.userId._id)
+      .map((record) => ({
+        userId: record.userId._id,
+        userName: record.userId.name,
+        userEmail: record.userId.email,
+        userRole: record.userId.role,
+        assignedOffice: record.userId.assignedOffice,
+        isActive: record.userId.isActive,
+        shiftTime: record.userId.shiftTime,
+        date: record.date.toISOString().split('T')[0],
+        attendance: record.attendance,
+        assigned: {
+          count: record.assigned?.count || 0,
+          appointmentIds: record.assigned?.appointmentIds || [],
+        },
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+      }));
+
+    // Log if we found orphaned records
+    const orphanedCount = attendanceRecords.length - formattedRecords.length;
+    if (orphanedCount > 0) {
+      console.log(
+        `Warning: Found ${orphanedCount} attendance records with missing user references for user: ${userId}`
+      );
+    }
 
     return {
       success: true,

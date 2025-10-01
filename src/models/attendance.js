@@ -16,6 +16,18 @@ const attendanceSchema = new mongoose.Schema(
       enum: ['Present', 'Absent', 'Half'],
       required: true,
     },
+    assigned: {
+      count: {
+        type: Number,
+        default: 0,
+      },
+      appointmentIds: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Appointment',
+        },
+      ],
+    },
   },
   {
     timestamps: true,
