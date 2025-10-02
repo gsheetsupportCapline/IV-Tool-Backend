@@ -693,6 +693,79 @@ async function getDynamicUnassignedAppointments() {
   }
 }
 
+// Check completion status of appointments by their MongoDB IDs
+async function checkAppointmentCompletionStatus(appointmentIds) {
+  try {
+    console.log(
+      'Service: Checking completion status for appointments:',
+      appointmentIds
+    );
+
+    const result = await AppointmentRepository.checkAppointmentCompletionStatus(
+      appointmentIds
+    );
+
+    // Separate completed and not completed appointments
+    const completedAppointments = result.filter(
+      (appointment) => appointment.completionStatus === 'Completed'
+    );
+    const notCompletedAppointments = result.filter(
+      (appointment) => appointment.completionStatus !== 'Completed'
+    );
+
+    // Create detailed response
+    const detailedData = {
+      completed: completedAppointments.map((appointment) => ({
+        appointmentId: appointment.appointmentId,
+        patientName: appointment.patientName,
+        patientId: appointment.patientId,
+        appointmentDate: appointment.appointmentDate,
+        appointmentTime: appointment.appointmentTime,
+        office: appointment.office,
+        completionStatus: appointment.completionStatus,
+        ivCompletedDate: appointment.ivCompletedDate,
+        completedBy: appointment.completedBy,
+      })),
+      notCompleted: notCompletedAppointments.map((appointment) => ({
+        appointmentId: appointment.appointmentId,
+        patientName: appointment.patientName,
+        patientId: appointment.patientId,
+        appointmentDate: appointment.appointmentDate,
+        appointmentTime: appointment.appointmentTime,
+        office: appointment.office,
+        completionStatus: appointment.completionStatus,
+        status: appointment.status,
+        ivType: appointment.ivType,
+      })),
+    };
+
+    const summary = {
+      totalAppointments: appointmentIds.length,
+      foundAppointments: result.length,
+      notFoundAppointments: appointmentIds.length - result.length,
+      completedCount: completedAppointments.length,
+      notCompletedCount: notCompletedAppointments.length,
+      completionPercentage:
+        result.length > 0
+          ? Math.round((completedAppointments.length / result.length) * 100)
+          : 0,
+    };
+
+    return {
+      success: true,
+      data: detailedData,
+      summary: summary,
+      message: `Found ${result.length} appointments. ${notCompletedAppointments.length} are not completed.`,
+    };
+  } catch (error) {
+    console.error(
+      'Error at service layer in checkAppointmentCompletionStatus:',
+      error
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -707,4 +780,5 @@ module.exports = {
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
   getDynamicUnassignedAppointments,
+  checkAppointmentCompletionStatus,
 };

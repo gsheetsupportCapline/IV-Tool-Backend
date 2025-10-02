@@ -61,6 +61,12 @@ router.get(
 
 router.get('/debug-data', AppointmentController.debugAppointmentData);
 
+// Check completion status of appointments by their MongoDB IDs
+router.post(
+  '/check-completion-status',
+  AppointmentController.checkAppointmentCompletionStatus
+);
+
 // Get dynamic unassigned appointments (no params needed - auto calculates date range)
 router.get(
   '/dynamic-unassigned-appointments',

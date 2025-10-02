@@ -518,6 +518,59 @@ const getDynamicUnassignedAppointments = async (req, res) => {
   }
 };
 
+// Check completion status of appointments by their MongoDB IDs
+const checkAppointmentCompletionStatus = async (req, res) => {
+  try {
+    const { appointmentIds } = req.body;
+
+    // Validate required fields
+    if (!appointmentIds || !Array.isArray(appointmentIds)) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointmentIds is required and must be an array',
+      });
+    }
+
+    if (appointmentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointmentIds array cannot be empty',
+      });
+    }
+
+    // Validate each appointment ID format
+    const mongoose = require('mongoose');
+    for (const appointmentId of appointmentIds) {
+      if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid appointmentId format: ${appointmentId}. Must be a valid MongoDB ObjectId`,
+        });
+      }
+    }
+
+    const result = await AppointmentService.checkAppointmentCompletionStatus(
+      appointmentIds
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      summary: result.summary,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error(
+      'Error at controller layer in checkAppointmentCompletionStatus:',
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to check appointment completion status',
+    });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -532,4 +585,5 @@ module.exports = {
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
   getDynamicUnassignedAppointments,
+  checkAppointmentCompletionStatus,
 };

@@ -776,6 +776,64 @@ async function getDynamicUnassignedAppointments() {
   }
 }
 
+// Check completion status of appointments by their MongoDB IDs
+async function checkAppointmentCompletionStatus(appointmentIds) {
+  try {
+    const mongoose = require('mongoose');
+
+    // Convert string IDs to ObjectIds
+    const objectIds = appointmentIds.map(
+      (id) => new mongoose.Types.ObjectId(id)
+    );
+
+    console.log(
+      'Repository: Checking completion status for appointment IDs:',
+      appointmentIds
+    );
+
+    const appointments = await Appointment.aggregate([
+      {
+        $unwind: '$appointments',
+      },
+      {
+        $match: {
+          'appointments._id': { $in: objectIds },
+        },
+      },
+      {
+        $project: {
+          appointmentId: '$appointments._id',
+          patientName: '$appointments.patientName',
+          patientId: '$appointments.patientId',
+          appointmentDate: '$appointments.appointmentDate',
+          appointmentTime: '$appointments.appointmentTime',
+          appointmentType: '$appointments.appointmentType',
+          completionStatus: '$appointments.completionStatus',
+          status: '$appointments.status',
+          ivType: '$appointments.ivType',
+          ivCompletedDate: '$appointments.ivCompletedDate',
+          completedBy: '$appointments.completedBy',
+          ivRemarks: '$appointments.ivRemarks',
+          office: '$officeName',
+        },
+      },
+      {
+        $sort: {
+          appointmentDate: 1,
+        },
+      },
+    ]);
+
+    console.log(
+      `Repository: Found ${appointments.length} appointments out of ${appointmentIds.length} requested`
+    );
+    return appointments;
+  } catch (error) {
+    console.error('Error checking appointment completion status:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
@@ -785,4 +843,5 @@ module.exports = {
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
   getDynamicUnassignedAppointments,
+  checkAppointmentCompletionStatus,
 };
