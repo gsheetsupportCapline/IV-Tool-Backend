@@ -34,7 +34,12 @@ async function getAttendanceByDate(date) {
 }
 
 // Save or update attendance record
-async function saveOrUpdateAttendance(userId, date, attendance) {
+async function saveOrUpdateAttendance(
+  userId,
+  date,
+  attendance,
+  assigned = null
+) {
   try {
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -50,8 +55,45 @@ async function saveOrUpdateAttendance(userId, date, attendance) {
       userId,
       date,
       attendance,
+      assigned,
       attendanceDate: attendanceDate.toISOString(),
     });
+
+    // Prepare update object
+    const updateData = {
+      userId: new mongoose.Types.ObjectId(userId),
+      date: attendanceDate,
+      attendance: attendance,
+    };
+
+    // Handle assigned field updates intelligently
+    if (assigned) {
+      // First, get existing record to preserve existing assigned data
+      const existingRecord = await Attendance.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        date: {
+          $gte: new Date(date + 'T00:00:00.000Z'),
+          $lt: new Date(date + 'T23:59:59.999Z'),
+        },
+      });
+
+      // Start with existing assigned data or defaults
+      updateData.assigned = {
+        count: existingRecord?.assigned?.count || 0,
+        appointmentIds: existingRecord?.assigned?.appointmentIds || [],
+      };
+
+      // Update only the fields that are provided
+      if (typeof assigned.count !== 'undefined') {
+        updateData.assigned.count = assigned.count;
+      }
+
+      if (assigned.appointmentIds) {
+        updateData.assigned.appointmentIds = assigned.appointmentIds.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+      }
+    }
 
     // Use upsert to either create new record or update existing one
     const result = await Attendance.findOneAndUpdate(
@@ -62,11 +104,7 @@ async function saveOrUpdateAttendance(userId, date, attendance) {
           $lt: new Date(date + 'T23:59:59.999Z'),
         },
       },
-      {
-        userId: new mongoose.Types.ObjectId(userId),
-        date: attendanceDate,
-        attendance: attendance,
-      },
+      updateData,
       {
         new: true,
         upsert: true,
@@ -264,6 +302,83 @@ async function getAllActiveUsers() {
   }
 }
 
+// Update only assigned field of existing attendance record
+async function updateAttendanceAssigned(userId, date, assigned) {
+  try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error(
+        'Invalid userId format. Must be a valid MongoDB ObjectId'
+      );
+    }
+
+    console.log('Updating attendance assigned data:', {
+      userId,
+      date,
+      assigned,
+    });
+
+    // First, find the existing record
+    const existingRecord = await Attendance.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      date: {
+        $gte: new Date(date + 'T00:00:00.000Z'),
+        $lt: new Date(date + 'T23:59:59.999Z'),
+      },
+    });
+
+    if (!existingRecord) {
+      throw new Error(
+        'Attendance record not found for the specified user and date'
+      );
+    }
+
+    // Prepare update object for assigned field only
+    const updateData = {};
+
+    // Preserve existing assigned data and update only provided fields
+    const currentAssigned = {
+      count: existingRecord.assigned?.count || 0,
+      appointmentIds: existingRecord.assigned?.appointmentIds || [],
+    };
+
+    // Update only the fields that are provided
+    if (typeof assigned.count !== 'undefined') {
+      currentAssigned.count = assigned.count;
+    }
+
+    if (assigned.appointmentIds) {
+      currentAssigned.appointmentIds = assigned.appointmentIds.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+    }
+
+    updateData.assigned = currentAssigned;
+
+    // Update the record
+    const result = await Attendance.findOneAndUpdate(
+      {
+        userId: new mongoose.Types.ObjectId(userId),
+        date: {
+          $gte: new Date(date + 'T00:00:00.000Z'),
+          $lt: new Date(date + 'T23:59:59.999Z'),
+        },
+      },
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate('userId', 'name email role assignedOffice isActive shiftTime');
+
+    console.log('Attendance assigned data updated:', result);
+    return result;
+  } catch (error) {
+    console.error('Error updating attendance assigned data:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getAttendanceByDate,
   saveOrUpdateAttendance,
@@ -271,4 +386,5 @@ module.exports = {
   getUserAttendanceInRange,
   getAttendanceSummary,
   getAllActiveUsers,
+  updateAttendanceAssigned,
 };

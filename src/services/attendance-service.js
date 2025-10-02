@@ -58,7 +58,12 @@ async function getAttendanceByDate(date) {
 }
 
 // Save or update single attendance record
-async function saveOrUpdateAttendance(userId, date, attendance) {
+async function saveOrUpdateAttendance(
+  userId,
+  date,
+  attendance,
+  assigned = null
+) {
   try {
     // Validate inputs
     if (!userId || !date || !attendance) {
@@ -84,15 +89,43 @@ async function saveOrUpdateAttendance(userId, date, attendance) {
       throw new Error('Invalid date format. Please use YYYY-MM-DD format');
     }
 
+    // Validate assigned field if provided
+    if (assigned) {
+      if (
+        typeof assigned.count !== 'undefined' &&
+        (typeof assigned.count !== 'number' || assigned.count < 0)
+      ) {
+        throw new Error('assigned.count must be a non-negative number');
+      }
+
+      if (assigned.appointmentIds && !Array.isArray(assigned.appointmentIds)) {
+        throw new Error('assigned.appointmentIds must be an array');
+      }
+
+      // Validate appointment IDs if provided
+      if (assigned.appointmentIds && assigned.appointmentIds.length > 0) {
+        for (const appointmentId of assigned.appointmentIds) {
+          if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+            throw new Error(
+              `Invalid appointmentId format: ${appointmentId}. Must be a valid MongoDB ObjectId`
+            );
+          }
+        }
+      }
+    }
+
     console.log('Service: Saving/updating attendance:', {
       userId,
       date,
       attendance,
+      assigned,
     });
+
     const result = await AttendanceRepository.saveOrUpdateAttendance(
       userId,
       date,
-      attendance
+      attendance,
+      assigned
     );
 
     return {
@@ -352,6 +385,103 @@ async function getAllActiveUsers() {
   }
 }
 
+// Update only assigned field of attendance record
+async function updateAttendanceAssigned(userId, date, assigned) {
+  try {
+    // Validate inputs
+    if (!userId || !date || !assigned) {
+      throw new Error('userId, date, and assigned are required');
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error(
+        'Invalid userId format. Must be a valid MongoDB ObjectId'
+      );
+    }
+
+    // Validate date format
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date format. Please use YYYY-MM-DD format');
+    }
+
+    // Validate assigned field
+    if (
+      typeof assigned.count !== 'undefined' &&
+      (typeof assigned.count !== 'number' || assigned.count < 0)
+    ) {
+      throw new Error('assigned.count must be a non-negative number');
+    }
+
+    if (assigned.appointmentIds && !Array.isArray(assigned.appointmentIds)) {
+      throw new Error('assigned.appointmentIds must be an array');
+    }
+
+    // Validate appointment IDs if provided
+    if (assigned.appointmentIds && assigned.appointmentIds.length > 0) {
+      for (const appointmentId of assigned.appointmentIds) {
+        if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+          throw new Error(
+            `Invalid appointmentId format: ${appointmentId}. Must be a valid MongoDB ObjectId`
+          );
+        }
+      }
+    }
+
+    // At least one field should be provided
+    if (typeof assigned.count === 'undefined' && !assigned.appointmentIds) {
+      throw new Error(
+        'At least one field (count or appointmentIds) must be provided in assigned object'
+      );
+    }
+
+    console.log('Service: Updating attendance assigned data:', {
+      userId,
+      date,
+      assigned,
+    });
+
+    const result = await AttendanceRepository.updateAttendanceAssigned(
+      userId,
+      date,
+      assigned
+    );
+
+    // Check if attendance record exists
+    if (!result) {
+      throw new Error(
+        'Attendance record not found for the specified user and date'
+      );
+    }
+
+    return {
+      success: true,
+      data: {
+        userId: result.userId._id,
+        userName: result.userId.name,
+        userEmail: result.userId.email,
+        userRole: result.userId.role,
+        assignedOffice: result.userId.assignedOffice,
+        isActive: result.userId.isActive,
+        shiftTime: result.userId.shiftTime,
+        date: result.date.toISOString().split('T')[0],
+        attendance: result.attendance,
+        assigned: {
+          count: result.assigned?.count || 0,
+          appointmentIds: result.assigned?.appointmentIds || [],
+        },
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+      },
+      message: 'Attendance assigned data updated successfully',
+    };
+  } catch (error) {
+    console.error('Error at service layer in updateAttendanceAssigned:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getAttendanceByDate,
   saveOrUpdateAttendance,
@@ -359,4 +489,5 @@ module.exports = {
   getUserAttendanceInRange,
   getAttendanceSummary,
   getAllActiveUsers,
+  updateAttendanceAssigned,
 };

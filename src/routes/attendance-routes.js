@@ -28,4 +28,7 @@ router.get('/user/:userId', AttendanceController.getUserAttendanceInRange);
 // GET /api/attendance/summary?startDate=2025-10-01&endDate=2025-10-31
 router.get('/summary', AttendanceController.getAttendanceSummary);
 
+// Update only assigned field of attendance record
+router.put('/update-assigned', AttendanceController.updateAttendanceAssigned);
+
 module.exports = router;

@@ -33,7 +33,7 @@ const getAttendanceByDate = async (req, res) => {
 // Save or update single attendance record
 const saveOrUpdateAttendance = async (req, res) => {
   try {
-    const { userId, date, attendance } = req.body;
+    const { userId, date, attendance, assigned } = req.body;
 
     // Validate required fields
     if (!userId || !date || !attendance) {
@@ -43,10 +43,31 @@ const saveOrUpdateAttendance = async (req, res) => {
       });
     }
 
+    // Validate assigned field if provided
+    if (assigned) {
+      if (
+        typeof assigned.count !== 'undefined' &&
+        (typeof assigned.count !== 'number' || assigned.count < 0)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'assigned.count must be a non-negative number',
+        });
+      }
+
+      if (assigned.appointmentIds && !Array.isArray(assigned.appointmentIds)) {
+        return res.status(400).json({
+          success: false,
+          message: 'assigned.appointmentIds must be an array',
+        });
+      }
+    }
+
     const result = await AttendanceService.saveOrUpdateAttendance(
       userId,
       date,
-      attendance
+      attendance,
+      assigned
     );
 
     res.status(200).json({
@@ -193,6 +214,69 @@ const getAllActiveUsers = async (req, res) => {
   }
 };
 
+// Update only assigned field of attendance record
+const updateAttendanceAssigned = async (req, res) => {
+  try {
+    const { userId, date, assigned } = req.body;
+
+    // Validate required fields
+    if (!userId || !date || !assigned) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId, date, and assigned are required fields',
+      });
+    }
+
+    // Validate assigned field structure
+    if (
+      typeof assigned.count !== 'undefined' &&
+      (typeof assigned.count !== 'number' || assigned.count < 0)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'assigned.count must be a non-negative number',
+      });
+    }
+
+    if (assigned.appointmentIds && !Array.isArray(assigned.appointmentIds)) {
+      return res.status(400).json({
+        success: false,
+        message: 'assigned.appointmentIds must be an array',
+      });
+    }
+
+    // At least one field should be provided for update
+    if (typeof assigned.count === 'undefined' && !assigned.appointmentIds) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'At least one field (count or appointmentIds) must be provided in assigned object',
+      });
+    }
+
+    const result = await AttendanceService.updateAttendanceAssigned(
+      userId,
+      date,
+      assigned
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error(
+      'Error at controller layer in updateAttendanceAssigned:',
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update attendance assigned data',
+    });
+  }
+};
+
 module.exports = {
   getAttendanceByDate,
   saveOrUpdateAttendance,
@@ -200,4 +284,5 @@ module.exports = {
   getUserAttendanceInRange,
   getAttendanceSummary,
   getAllActiveUsers,
+  updateAttendanceAssigned,
 };
