@@ -61,4 +61,10 @@ router.get(
 
 router.get('/debug-data', AppointmentController.debugAppointmentData);
 
+// Get dynamic unassigned appointments (no params needed - auto calculates date range)
+router.get(
+  '/dynamic-unassigned-appointments',
+  AppointmentController.getDynamicUnassignedAppointments
+);
+
 module.exports = router;

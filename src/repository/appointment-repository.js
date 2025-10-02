@@ -688,6 +688,94 @@ async function getAppointmentCompletionAnalysis(
   }
 }
 
+// Get dynamic unassigned appointments with calculated date range
+async function getDynamicUnassignedAppointments() {
+  try {
+    // Calculate dynamic date range
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-indexed (0 = Jan, 9 = Oct)
+
+    // Calculate start date: previous month's 1st date, but not earlier than 2025-10-01
+    let startDate;
+    const minStartDate = new Date('2025-10-01T00:00:00.000Z');
+
+    if (currentMonth === 0) {
+      // If current month is January, previous month is December of previous year
+      startDate = new Date(currentYear - 1, 11, 1); // December 1st of previous year
+    } else {
+      // Previous month's 1st date
+      startDate = new Date(currentYear, currentMonth - 1, 1);
+    }
+
+    // Ensure start date is not earlier than 2025-10-01
+    if (startDate < minStartDate) {
+      startDate = minStartDate;
+    }
+
+    // Calculate end date: current date + 15 days
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 15);
+
+    console.log('Dynamic date range calculated:', {
+      today: today.toISOString(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+
+    // Query for unassigned appointments in all offices
+    const unassignedAppointments = await Appointment.aggregate([
+      {
+        $unwind: '$appointments',
+      },
+      {
+        $match: {
+          'appointments.appointmentDate': {
+            $gte: startDate,
+            $lte: endDate,
+          },
+          'appointments.status': 'Unassigned',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          appointmentId: '$appointments._id',
+          appointmentDate: '$appointments.appointmentDate',
+          appointmentTime: '$appointments.appointmentTime',
+          appointmentType: '$appointments.appointmentType',
+          patientId: '$appointments.patientId',
+          patientName: '$appointments.patientName',
+          ivType: '$appointments.ivType',
+          status: '$appointments.status',
+          office: '$officeName',
+        },
+      },
+      {
+        $sort: {
+          appointmentDate: 1,
+          office: 1,
+        },
+      },
+    ]);
+
+    console.log(
+      `Found ${unassignedAppointments.length} dynamic unassigned appointments`
+    );
+    return {
+      appointments: unassignedAppointments,
+      dateRange: {
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        today: today.toISOString().split('T')[0],
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching dynamic unassigned appointments:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataByOffice,
   getDataForOffice,
@@ -696,4 +784,5 @@ module.exports = {
   fetchAppointmentsByOfficeAndRemarks,
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
+  getDynamicUnassignedAppointments,
 };

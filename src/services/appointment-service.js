@@ -657,6 +657,42 @@ async function debugAppointmentData(officeName) {
   }
 }
 
+// Get dynamic unassigned appointments with calculated date range
+async function getDynamicUnassignedAppointments() {
+  try {
+    console.log('Service: Fetching dynamic unassigned appointments');
+    const result =
+      await AppointmentRepository.getDynamicUnassignedAppointments();
+
+    // Format appointments for better readability
+    const formattedAppointments = result.appointments.map((appointment) => ({
+      appointmentId: appointment.appointmentId,
+      appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
+      appointmentTime: appointment.appointmentTime,
+      appointmentType: appointment.appointmentType,
+      patientId: appointment.patientId,
+      patientName: appointment.patientName,
+      ivType: appointment.ivType,
+      status: appointment.status,
+      office: appointment.office,
+    }));
+
+    return {
+      success: true,
+      data: formattedAppointments,
+      count: formattedAppointments.length,
+      dateRange: result.dateRange,
+      message: 'Dynamic unassigned appointments fetched successfully',
+    };
+  } catch (error) {
+    console.error(
+      'Error at service layer in getDynamicUnassignedAppointments:',
+      error
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -670,4 +706,5 @@ module.exports = {
   getAppointmentsByOfficeAndRemarks,
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
+  getDynamicUnassignedAppointments,
 };

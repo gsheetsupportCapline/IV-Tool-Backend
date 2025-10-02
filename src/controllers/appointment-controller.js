@@ -493,6 +493,31 @@ const debugAppointmentData = async (req, res) => {
   }
 };
 
+// Get dynamic unassigned appointments with calculated date range
+const getDynamicUnassignedAppointments = async (req, res) => {
+  try {
+    const result = await AppointmentService.getDynamicUnassignedAppointments();
+
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      count: result.count,
+      dateRange: result.dateRange,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error(
+      'Error at controller layer in getDynamicUnassignedAppointments:',
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message:
+        error.message || 'Failed to fetch dynamic unassigned appointments',
+    });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -506,4 +531,5 @@ module.exports = {
   getAppointmentsByOfficeAndRemarks,
   getAppointmentCompletionAnalysis,
   debugAppointmentData,
+  getDynamicUnassignedAppointments,
 };
