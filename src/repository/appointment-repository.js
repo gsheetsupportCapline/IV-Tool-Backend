@@ -698,7 +698,7 @@ async function getDynamicUnassignedAppointments() {
 
     // Calculate start date: previous month's 1st date, but not earlier than 2025-10-01
     let startDate;
-    const minStartDate = new Date('2025-10-01T00:00:00.000Z');
+    const minStartDate = new Date('2025-10-13T00:00:00.000Z');
 
     if (currentMonth === 0) {
       // If current month is January, previous month is December of previous year
