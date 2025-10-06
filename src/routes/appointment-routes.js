@@ -5,6 +5,8 @@ const {
   updateAppointmentsStatus,
 } = require('../controllers/appointment-controller');
 
+router.post('/aggregate', AppointmentController.aggregateAppointments);
+
 router.post(
   '/fetch-and-save-appointments',
   AppointmentController.fetchAndSaveAppointments

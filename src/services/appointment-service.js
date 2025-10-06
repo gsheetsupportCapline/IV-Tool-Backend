@@ -451,11 +451,13 @@ async function fetchUnassignedAppointmentsInRange(
         : 'appointments.appointmentDate';
 
     const appointments = await Appointment.aggregate([
-      { $match: { 'appointments.status': 'Unassigned' } },
       { $unwind: '$appointments' },
       {
         $match: {
-          'appointments.status': 'Unassigned',
+          $or: [
+            { 'appointments.completionStatus': { $ne: 'Completed' } },
+            { 'appointments.status': 'Unassigned' },
+          ],
           [dateFieldName]: {
             $gte: new Date(startDateISO),
             $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
@@ -766,6 +768,14 @@ async function checkAppointmentCompletionStatus(appointmentIds) {
   }
 }
 
+async function aggregate(pipeline) {
+  if (!Array.isArray(pipeline)) {
+    throw new Error('pipeline must be an array');
+  }
+  // run pipeline on Appointment collection
+  return Appointment.aggregate(pipeline);
+}
+
 module.exports = {
   fetchDataAndStoreAppointments,
   fetchDataForSpecificOffice,
@@ -781,4 +791,5 @@ module.exports = {
   debugAppointmentData,
   getDynamicUnassignedAppointments,
   checkAppointmentCompletionStatus,
+  aggregate,
 };

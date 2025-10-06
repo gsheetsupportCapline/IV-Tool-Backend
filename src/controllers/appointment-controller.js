@@ -571,6 +571,21 @@ const checkAppointmentCompletionStatus = async (req, res) => {
   }
 };
 
+const aggregateAppointments = async (req, res) => {
+  try {
+    const pipeline = req.body.pipeline;
+    if (!Array.isArray(pipeline)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'pipeline must be an array' });
+    }
+    const result = await AppointmentService.aggregate(pipeline);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   fetchAndSaveAppointments,
   fetchDataForSpecificOffice,
@@ -586,4 +601,5 @@ module.exports = {
   debugAppointmentData,
   getDynamicUnassignedAppointments,
   checkAppointmentCompletionStatus,
+  aggregateAppointments,
 };
