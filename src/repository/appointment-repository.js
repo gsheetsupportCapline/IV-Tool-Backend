@@ -391,6 +391,7 @@ async function getAppointmentCompletionAnalysis(
       ivType,
       startDateObj: startDateObj.toISOString(),
       endDateObj: endDateObj.toISOString(),
+      conversionNote: dateType === 'ivCompletedDate' ? 'Will convert IST to CST in pipeline' : 'No conversion needed',
     });
 
     // Determine the field name based on dateType
@@ -398,6 +399,22 @@ async function getAppointmentCompletionAnalysis(
       dateType === 'ivCompletedDate'
         ? 'appointments.ivCompletedDate'
         : 'appointments.appointmentDate';
+
+    // Create match condition - if ivCompletedDate, we'll convert IST to CST in pipeline
+    const getMatchCondition = () => {
+      if (dateType === 'ivCompletedDate') {
+        // For ivCompletedDate, we'll do date filtering after conversion in pipeline
+        return {};
+      } else {
+        // For appointmentDate, use direct date filtering
+        return {
+          [dateFieldName]: {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+        };
+      }
+    };
 
     // Define office names
     const officeNames = [
@@ -438,6 +455,24 @@ async function getAppointmentCompletionAnalysis(
         { $match: { officeName: officeName } },
         { $unwind: '$appointments' },
         {
+          $addFields: {
+            // Convert IST to CST if dateType is ivCompletedDate
+            convertedDate: dateType === 'ivCompletedDate' ? {
+              $cond: [
+                { $ne: ['$appointments.ivCompletedDate', null] },
+                {
+                  $dateAdd: {
+                    startDate: '$appointments.ivCompletedDate',
+                    unit: 'minute',
+                    amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes (IST is UTC+5:30, CST is UTC-6)
+                  }
+                },
+                null
+              ]
+            } : '$appointments.appointmentDate'
+          }
+        },
+        {
           $match: {
             'appointments.ivCompletedDate': {
               $exists: true,
@@ -445,10 +480,17 @@ async function getAppointmentCompletionAnalysis(
               $ne: '',
             },
             'appointments.ivType': ivType,
-            [dateFieldName]: {
-              $gte: startDateObj,
-              $lte: endDateObj,
-            },
+            ...(dateType === 'ivCompletedDate' ? {
+              convertedDate: {
+                $gte: startDateObj,
+                $lte: endDateObj,
+              }
+            } : {
+              [dateFieldName]: {
+                $gte: startDateObj,
+                $lte: endDateObj,
+              }
+            }),
           },
         },
         {
@@ -469,6 +511,24 @@ async function getAppointmentCompletionAnalysis(
         { $match: { officeName: officeName } },
         { $unwind: '$appointments' },
         {
+          $addFields: {
+            // Convert IST to CST if dateType is ivCompletedDate
+            convertedDate: dateType === 'ivCompletedDate' ? {
+              $cond: [
+                { $ne: ['$appointments.ivCompletedDate', null] },
+                {
+                  $dateAdd: {
+                    startDate: '$appointments.ivCompletedDate',
+                    unit: 'minute',
+                    amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes
+                  }
+                },
+                null
+              ]
+            } : '$appointments.appointmentDate'
+          }
+        },
+        {
           $match: {
             'appointments.ivCompletedDate': {
               $exists: true,
@@ -476,10 +536,17 @@ async function getAppointmentCompletionAnalysis(
               $ne: '',
             },
             'appointments.ivType': ivType,
-            [dateFieldName]: {
-              $gte: startDateObj,
-              $lte: endDateObj,
-            },
+            ...(dateType === 'ivCompletedDate' ? {
+              convertedDate: {
+                $gte: startDateObj,
+                $lte: endDateObj,
+              }
+            } : {
+              [dateFieldName]: {
+                $gte: startDateObj,
+                $lte: endDateObj,
+              }
+            }),
           },
         },
         {
