@@ -391,7 +391,10 @@ async function getAppointmentCompletionAnalysis(
       ivType,
       startDateObj: startDateObj.toISOString(),
       endDateObj: endDateObj.toISOString(),
-      conversionNote: dateType === 'ivCompletedDate' ? 'Will convert IST to CST in pipeline' : 'No conversion needed',
+      conversionNote:
+        dateType === 'ivCompletedDate'
+          ? 'Will convert IST to CST in pipeline'
+          : 'No conversion needed',
     });
 
     // Determine the field name based on dateType
@@ -457,20 +460,23 @@ async function getAppointmentCompletionAnalysis(
         {
           $addFields: {
             // Convert IST to CST if dateType is ivCompletedDate
-            convertedDate: dateType === 'ivCompletedDate' ? {
-              $cond: [
-                { $ne: ['$appointments.ivCompletedDate', null] },
-                {
-                  $dateAdd: {
-                    startDate: '$appointments.ivCompletedDate',
-                    unit: 'minute',
-                    amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes (IST is UTC+5:30, CST is UTC-6)
+            convertedDate:
+              dateType === 'ivCompletedDate'
+                ? {
+                    $cond: [
+                      { $ne: ['$appointments.ivCompletedDate', null] },
+                      {
+                        $dateAdd: {
+                          startDate: '$appointments.ivCompletedDate',
+                          unit: 'minute',
+                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes (IST is UTC+5:30, CST is UTC-6)
+                        },
+                      },
+                      null,
+                    ],
                   }
-                },
-                null
-              ]
-            } : '$appointments.appointmentDate'
-          }
+                : '$appointments.appointmentDate',
+          },
         },
         {
           $match: {
@@ -480,17 +486,19 @@ async function getAppointmentCompletionAnalysis(
               $ne: '',
             },
             'appointments.ivType': ivType,
-            ...(dateType === 'ivCompletedDate' ? {
-              convertedDate: {
-                $gte: startDateObj,
-                $lte: endDateObj,
-              }
-            } : {
-              [dateFieldName]: {
-                $gte: startDateObj,
-                $lte: endDateObj,
-              }
-            }),
+            ...(dateType === 'ivCompletedDate'
+              ? {
+                  convertedDate: {
+                    $gte: startDateObj,
+                    $lte: endDateObj,
+                  },
+                }
+              : {
+                  [dateFieldName]: {
+                    $gte: startDateObj,
+                    $lte: endDateObj,
+                  },
+                }),
           },
         },
         {
@@ -513,20 +521,23 @@ async function getAppointmentCompletionAnalysis(
         {
           $addFields: {
             // Convert IST to CST if dateType is ivCompletedDate
-            convertedDate: dateType === 'ivCompletedDate' ? {
-              $cond: [
-                { $ne: ['$appointments.ivCompletedDate', null] },
-                {
-                  $dateAdd: {
-                    startDate: '$appointments.ivCompletedDate',
-                    unit: 'minute',
-                    amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes
+            convertedDate:
+              dateType === 'ivCompletedDate'
+                ? {
+                    $cond: [
+                      { $ne: ['$appointments.ivCompletedDate', null] },
+                      {
+                        $dateAdd: {
+                          startDate: '$appointments.ivCompletedDate',
+                          unit: 'minute',
+                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
+                        },
+                      },
+                      null,
+                    ],
                   }
-                },
-                null
-              ]
-            } : '$appointments.appointmentDate'
-          }
+                : '$appointments.appointmentDate',
+          },
         },
         {
           $match: {
@@ -536,17 +547,19 @@ async function getAppointmentCompletionAnalysis(
               $ne: '',
             },
             'appointments.ivType': ivType,
-            ...(dateType === 'ivCompletedDate' ? {
-              convertedDate: {
-                $gte: startDateObj,
-                $lte: endDateObj,
-              }
-            } : {
-              [dateFieldName]: {
-                $gte: startDateObj,
-                $lte: endDateObj,
-              }
-            }),
+            ...(dateType === 'ivCompletedDate'
+              ? {
+                  convertedDate: {
+                    $gte: startDateObj,
+                    $lte: endDateObj,
+                  },
+                }
+              : {
+                  [dateFieldName]: {
+                    $gte: startDateObj,
+                    $lte: endDateObj,
+                  },
+                }),
           },
         },
         {

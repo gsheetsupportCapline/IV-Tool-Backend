@@ -521,16 +521,50 @@ async function fetchCompletedAppointmentsCountByUser(
         ? 'appointments.ivCompletedDate'
         : 'appointments.appointmentDate';
 
+    console.log('Master data analysis parameters:', {
+      officeName,
+      startDate,
+      endDate,
+      dateType,
+      conversionNote: dateType === 'ivCompletedDate' ? 'Will convert IST to CST in pipeline' : 'No conversion needed',
+    });
+
     const appointments = await Appointment.aggregate([
       { $match: { officeName: officeName } }, // Filter by officeName to reduce the dataset
       { $unwind: '$appointments' }, // Flatten the appointments array
+      // Add CST conversion stage if dateType is ivCompletedDate
+      ...(dateType === 'ivCompletedDate' ? [{
+        $addFields: {
+          // Convert IST to CST if dateType is ivCompletedDate
+          convertedDate: {
+            $cond: [
+              { $ne: ['$appointments.ivCompletedDate', null] },
+              {
+                $dateAdd: {
+                  startDate: '$appointments.ivCompletedDate',
+                  unit: 'minute',
+                  amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes
+                }
+              },
+              null
+            ]
+          }
+        }
+      }] : []),
       {
         $match: {
           'appointments.completionStatus': 'Completed',
-          [dateFieldName]: {
-            $gte: new Date(startDateISO),
-            $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
-          },
+          ...(dateType === 'ivCompletedDate' ? {
+            convertedDate: {
+              $gte: new Date(startDateISO),
+              $lt: new Date(endDateISO),
+            }
+          } : {
+            [dateFieldName]: {
+              $gte: new Date(startDateISO),
+              $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
+            }
+          }),
         },
       }, // Filter for completed appointments
       { $group: { _id: '$appointments.assignedUser', count: { $sum: 1 } } }, // Group by assignedUser and count
