@@ -15,7 +15,10 @@ const OfficeDataRepository = {
         fromDate,
         toDate,
         dateFieldName,
-        conversionNote: dateFieldName === 'appointments.ivCompletedDate' ? 'Will convert IST to CST in pipeline' : 'No conversion needed',
+        conversionNote:
+          dateFieldName === 'appointments.ivCompletedDate'
+            ? 'Will convert IST to CST in pipeline'
+            : 'No conversion needed',
       });
 
       // Build the aggregation pipeline
@@ -24,39 +27,45 @@ const OfficeDataRepository = {
         { $unwind: '$appointments' },
 
         // Add CST conversion stage if dateFieldName is ivCompletedDate
-        ...(dateFieldName === 'appointments.ivCompletedDate' ? [{
-          $addFields: {
-            // Convert IST to CST if dateFieldName is ivCompletedDate
-            convertedDate: {
-              $cond: [
-                { $ne: ['$appointments.ivCompletedDate', null] },
-                {
-                  $dateAdd: {
-                    startDate: '$appointments.ivCompletedDate',
-                    unit: 'minute',
-                    amount: -690  // IST to CST: subtract 11.5 hours = 690 minutes
-                  }
+        ...(dateFieldName === 'appointments.ivCompletedDate'
+          ? [
+              {
+                $addFields: {
+                  // Convert IST to CST if dateFieldName is ivCompletedDate
+                  convertedDate: {
+                    $cond: [
+                      { $ne: ['$appointments.ivCompletedDate', null] },
+                      {
+                        $dateAdd: {
+                          startDate: '$appointments.ivCompletedDate',
+                          unit: 'minute',
+                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
+                        },
+                      },
+                      null,
+                    ],
+                  },
                 },
-                null
-              ]
-            }
-          }
-        }] : []),
+              },
+            ]
+          : []),
 
         // Match appointments within date range
         {
           $match: {
-            ...(dateFieldName === 'appointments.ivCompletedDate' ? {
-              convertedDate: {
-                $gte: startDate,
-                $lt: endDate,
-              }
-            } : {
-              [dateFieldName]: {
-                $gte: startDate,
-                $lt: endDate,
-              }
-            }),
+            ...(dateFieldName === 'appointments.ivCompletedDate'
+              ? {
+                  convertedDate: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                }
+              : {
+                  [dateFieldName]: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                }),
           },
         },
 
