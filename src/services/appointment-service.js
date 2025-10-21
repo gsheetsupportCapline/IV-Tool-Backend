@@ -2,126 +2,124 @@
 const mongoose = require('mongoose');
 const AppointmentRepository = require('../repository/appointment-repository');
 const Appointment = require('../models/appointment');
+const DropdownValuesRepository = require('../repository/dropdownValues-repository');
 
 async function fetchDataAndStoreAppointments() {
   try {
-    const officeNames = [
-      'Aransas',
-      'Azle',
-      'Beaumont',
-      'Benbrook',
-      'Calallen',
-      'Crosby',
-      'Devine',
-      'Elgin',
-      'Grangerland',
-      'Huffman',
-      'Jasper',
-      'Lavaca',
-      'Liberty',
-      'Lytle',
-      'Mathis',
-      'Potranco',
-      'Rio Bravo',
-      'Riverwalk',
-      'Rockdale',
-      'Sinton',
-      'Splendora',
-      'Springtown',
-      'Tidwell',
-      'Victoria',
-      'Westgreen',
-      'Winnie',
-    ];
+    // Fetch office names dynamically from dropdownValues collection
+    const officeDropdown = await DropdownValuesRepository.findByCategory(
+      'Office'
+    );
+
+    console.log('Office Dropdown Result:', officeDropdown);
+    console.log('Options:', officeDropdown?.options);
+
+    if (
+      !officeDropdown ||
+      !officeDropdown.options ||
+      officeDropdown.options.length === 0
+    ) {
+      throw new Error(
+        'No office names found in dropdownValues collection with category "Office"'
+      );
+    }
+
+    // Extract office names from the options array
+    const officeNames = officeDropdown.options.map((option) => option.name);
+    console.log('Fetched office names from database:', officeNames);
 
     for (const officeName of officeNames) {
-      const response = await AppointmentRepository.fetchDataByOffice(
-        officeName
-      );
-      // console.log(response);
-      const appointmentsData = response.data;
-
-      const newAppointments = appointmentsData.map((appointmentData) => {
-        const dateTimeString = appointmentData.c5.split(' ');
-        const [datePart, timePart] = dateTimeString;
-        const appointmentDate = datePart;
-        return {
-          appointmentDate: appointmentDate,
-          appointmentTime: timePart.substring(0, 8),
-          patientId: appointmentData.c1,
-          patientName: `${appointmentData.c12} ${appointmentData.c13}`,
-          insuranceName: appointmentData.c7,
-          insurancePhone: appointmentData.c8,
-          policyHolderName: appointmentData.c2,
-          policyHolderDOB: appointmentData.c4,
-          appointmentType: appointmentData.c6,
-          memberId: appointmentData.c9,
-          employerName: appointmentData.c10,
-          groupNumber: appointmentData.c11,
-          relationWithPatient: appointmentData.c3,
-          medicaidId: appointmentData.c14,
-          carrierId: appointmentData.c15,
-          confirmationStatus: appointmentData.c16,
-          cellPhone: appointmentData.c17,
-          homePhone: appointmentData.c18,
-          workPhone: appointmentData.c19,
-          patientDOB: appointmentData.c20,
-          ivRequestedDate: new Date(),
-        };
-      });
-
-      let officeDoc = await Appointment.findOne({ officeName: officeName });
-
-      if (!officeDoc) {
-        // If office does not exist, create a new document
-        officeDoc = new Appointment({
-          officeName: officeName,
-          appointments: newAppointments,
-        });
-        await officeDoc.save();
-        console.log('New office document created:', officeName);
-      } else {
-        const existingAppointments = officeDoc.appointments;
-        let appointmentsToAdd = [];
-
-        newAppointments.forEach((newAppointment) => {
-          const isDuplicate = existingAppointments.some(
-            (existingAppointment) => {
-              // Convert both dates to Date objects
-              const existingDate = new Date(
-                existingAppointment.appointmentDate
-              );
-              const newDate = new Date(newAppointment.appointmentDate);
-
-              // Compare dates, patient ID
-              return (
-                existingAppointment.patientId == newAppointment.patientId &&
-                existingDate.getDate() == newDate.getDate()
-                // && existingAppointment.insuranceName == newAppointment.insuranceName
-              );
-            }
-          );
-          if (!isDuplicate) {
-            appointmentsToAdd.push(newAppointment);
-          }
-        });
-        if (appointmentsToAdd.length > 0) {
-          // Update the office document with truly new appointments
-          await Appointment.updateOne(
-            { officeName: officeName },
-            { $push: { appointments: { $each: appointmentsToAdd } } }
-          );
-          console.log(
-            `Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`
-          );
-        } else {
-          console.log('No new appointments to add for office:', officeName);
-        }
-      }
+      await processOfficeAppointments(officeName);
     }
   } catch (error) {
     console.log('Error at Service Layer fetchDataAndStoreAppointments');
     console.error('Error fetching and storing data:', error);
+    throw error;
+  }
+}
+
+async function processOfficeAppointments(officeName) {
+  try {
+    const response = await AppointmentRepository.fetchDataByOffice(officeName);
+    // console.log(response);
+    const appointmentsData = response.data;
+
+    const newAppointments = appointmentsData.map((appointmentData) => {
+      const dateTimeString = appointmentData.c5.split(' ');
+      const [datePart, timePart] = dateTimeString;
+      const appointmentDate = datePart;
+      return {
+        appointmentDate: appointmentDate,
+        appointmentTime: timePart.substring(0, 8),
+        patientId: appointmentData.c1,
+        patientName: `${appointmentData.c12} ${appointmentData.c13}`,
+        insuranceName: appointmentData.c7,
+        insurancePhone: appointmentData.c8,
+        policyHolderName: appointmentData.c2,
+        policyHolderDOB: appointmentData.c4,
+        appointmentType: appointmentData.c6,
+        memberId: appointmentData.c9,
+        employerName: appointmentData.c10,
+        groupNumber: appointmentData.c11,
+        relationWithPatient: appointmentData.c3,
+        medicaidId: appointmentData.c14,
+        carrierId: appointmentData.c15,
+        confirmationStatus: appointmentData.c16,
+        cellPhone: appointmentData.c17,
+        homePhone: appointmentData.c18,
+        workPhone: appointmentData.c19,
+        patientDOB: appointmentData.c20,
+        ivRequestedDate: new Date(),
+      };
+    });
+
+    let officeDoc = await Appointment.findOne({ officeName: officeName });
+
+    if (!officeDoc) {
+      // If office does not exist, create a new document
+      officeDoc = new Appointment({
+        officeName: officeName,
+        appointments: newAppointments,
+      });
+      await officeDoc.save();
+      console.log('New office document created:', officeName);
+    } else {
+      const existingAppointments = officeDoc.appointments;
+      let appointmentsToAdd = [];
+
+      newAppointments.forEach((newAppointment) => {
+        const isDuplicate = existingAppointments.some((existingAppointment) => {
+          // Convert both dates to Date objects
+          const existingDate = new Date(existingAppointment.appointmentDate);
+          const newDate = new Date(newAppointment.appointmentDate);
+
+          // Compare dates, patient ID
+          return (
+            existingAppointment.patientId == newAppointment.patientId &&
+            existingDate.getDate() == newDate.getDate()
+            // && existingAppointment.insuranceName == newAppointment.insuranceName
+          );
+        });
+        if (!isDuplicate) {
+          appointmentsToAdd.push(newAppointment);
+        }
+      });
+      if (appointmentsToAdd.length > 0) {
+        // Update the office document with truly new appointments
+        await Appointment.updateOne(
+          { officeName: officeName },
+          { $push: { appointments: { $each: appointmentsToAdd } } }
+        );
+        console.log(
+          `Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`
+        );
+      } else {
+        console.log('No new appointments to add for office:', officeName);
+      }
+    }
+  } catch (error) {
+    console.log('Error processing office appointments for:', officeName);
+    console.error('Error:', error);
     throw error;
   }
 }

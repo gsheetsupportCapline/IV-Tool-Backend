@@ -3,6 +3,7 @@
 const axios = require('axios');
 const { ES_URL } = require('../config/server.config');
 const Appointment = require('../models/appointment');
+const DropdownValuesRepository = require('./dropdownValues-repository');
 
 async function fetchDataByOffice(officeName) {
   try {
@@ -419,36 +420,23 @@ async function getAppointmentCompletionAnalysis(
       }
     };
 
-    // Define office names
-    const officeNames = [
-      'Aransas',
-      'Azle',
-      'Beaumont',
-      'Benbrook',
-      'Calallen',
-      'Crosby',
-      'Devine',
-      'Elgin',
-      'Grangerland',
-      'Huffman',
-      'Jasper',
-      'Lavaca',
-      'Liberty',
-      'Lytle',
-      'Mathis',
-      'Potranco',
-      'Rio Bravo',
-      'Riverwalk',
-      'Rockdale',
-      'Sinton',
-      'Splendora',
-      'Springtown',
-      'Tidwell',
-      'Victoria',
-      'Westgreen',
-      'Winnie',
-      'OS',
-    ];
+    // Fetch office names dynamically from dropdownValues collection
+    const officeDropdown = await DropdownValuesRepository.findByCategory(
+      'Office'
+    );
+
+    if (
+      !officeDropdown ||
+      !officeDropdown.options ||
+      officeDropdown.options.length === 0
+    ) {
+      throw new Error(
+        'No office names found in dropdownValues collection with category "Office"'
+      );
+    }
+
+    // Extract office names from the options array
+    const officeNames = officeDropdown.options.map((option) => option.name);
 
     const results = [];
 

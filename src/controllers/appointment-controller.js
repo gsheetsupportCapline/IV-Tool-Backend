@@ -1,4 +1,5 @@
 const AppointmentService = require('../services/appointment-service');
+const DropdownValuesRepository = require('../repository/dropdownValues-repository');
 
 const fetchAndSaveAppointments = async (req, res) => {
   try {
@@ -270,35 +271,25 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     // Default to appointmentDate if dateType is not provided
     const selectedDateType = dateType || 'appointmentDate';
 
-    const offices = [
-      'Aransas',
-      'Azle',
-      'Beaumont',
-      'Benbrook',
-      'Calallen',
-      'Crosby',
-      'Devine',
-      'Elgin',
-      'Grangerland',
-      'Huffman',
-      'Jasper',
-      'Lavaca',
-      'Liberty',
-      'Lytle',
-      'Mathis',
-      'Potranco',
-      'Rio Bravo',
-      'Riverwalk',
-      'Rockdale',
-      'Sinton',
-      'Splendora',
-      'Springtown',
-      'Tidwell',
-      'Victoria',
-      'Westgreen',
-      'Winnie',
-      'OS',
-    ];
+    // Fetch office names dynamically from dropdownValues collection
+    const officeDropdown = await DropdownValuesRepository.findByCategory(
+      'Office'
+    );
+
+    if (
+      !officeDropdown ||
+      !officeDropdown.options ||
+      officeDropdown.options.length === 0
+    ) {
+      return res.status(404).json({
+        message:
+          'No office names found in dropdownValues collection with category "Office"',
+      });
+    }
+
+    // Extract office names from the options array
+    const offices = officeDropdown.options.map((option) => option.name);
+
     const results = await Promise.all(
       offices.map((officeName) =>
         AppointmentService.fetchCompletedAppointmentsCountByUser(
