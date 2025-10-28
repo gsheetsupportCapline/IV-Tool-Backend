@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const appointmentSchema = new mongoose.Schema(
   {
@@ -114,18 +114,18 @@ const appointmentSchema = new mongoose.Schema(
         },
         ivType: {
           type: String,
-          enum: ["Normal", "Rush"],
-          default: "Normal",
+          enum: ['Normal', 'Rush'],
+          default: 'Normal',
         },
         completionStatus: {
           type: String,
-          enum: ["IV Not Done", "In Process", "Completed"],
-          default: "IV Not Done",
+          enum: ['IV Not Done', 'In Process', 'Completed'],
+          default: 'IV Not Done',
         },
         status: {
           type: String,
-          enum: ["Assigned", "Unassigned"],
-          default: "Unassigned",
+          enum: ['Assigned', 'Unassigned'],
+          default: 'Unassigned',
         },
         assignedUser: {
           type: String,
@@ -181,8 +181,8 @@ const appointmentSchema = new mongoose.Schema(
           required: false,
         },
         imageUrl: {
-           type:String,
-           required:false,
+          type: String,
+          required: false,
         },
       },
     ],
@@ -196,7 +196,11 @@ const appointmentSchema = new mongoose.Schema(
 //   { unique: true }
 // );
 
+// Add indexes for better performance
+appointmentSchema.index({ officeName: 1 }); // For findOne by officeName
+appointmentSchema.index({ 'appointments._id': 1 }); // For finding specific appointment
 appointmentSchema.index({ assignedUser: 1 });
-const Appointment = mongoose.model("Appointment", appointmentSchema);
+
+const Appointment = mongoose.model('Appointment', appointmentSchema);
 
 module.exports = Appointment;

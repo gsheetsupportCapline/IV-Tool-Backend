@@ -92,38 +92,37 @@ async function updateAppointmentInArray(
   ivAssignedByUserName
 ) {
   try {
-    console.log('repository');
-    const doc = await Appointment.findOne({ officeName: officeName });
-    if (!doc) {
-      throw new Error('Office not found');
-    }
-    const appointmentIndex = doc.appointments.findIndex(
-      (appointment) => appointment._id.toString() === appointmentId
-    );
-    console.log('appointmentIndex', appointmentIndex);
-    if (appointmentIndex === -1) {
-      throw new Error('Appointment not found');
-    }
-    console.log('doc _id', doc._id);
+    console.log('repository - updating appointment');
+
+    // Use MongoDB's $ positional operator for direct update - much faster
     const result = await Appointment.updateOne(
-      { _id: doc._id },
+      {
+        officeName: officeName,
+        'appointments._id': appointmentId,
+      },
       {
         $set: {
-          [`appointments.${appointmentIndex}.assignedUser`]: userId,
-          [`appointments.${appointmentIndex}.status`]: status,
-          [`appointments.${appointmentIndex}.completionStatus`]:
-            completionStatus,
-          [`appointments.${appointmentIndex}.ivAssignedDate`]: ivAssignedDate,
-          [`appointments.${appointmentIndex}.ivAssignedByUserName`]:
-            ivAssignedByUserName,
+          'appointments.$.assignedUser': userId,
+          'appointments.$.status': status,
+          'appointments.$.completionStatus': completionStatus,
+          'appointments.$.ivAssignedDate': ivAssignedDate,
+          'appointments.$.ivAssignedByUserName': ivAssignedByUserName,
+          'appointments.$.lastUpdatedAt': new Date(),
         },
       }
     );
-    console.log('result in repository', result);
+
+    console.log('Update result:', result);
+
+    if (result.matchedCount === 0) {
+      throw new Error('Appointment not found or office not found');
+    }
+
     return result;
   } catch (error) {
     console.error(
-      `Error updating appointmentfor office: ${office} , appointmentId :${appointmentId} `
+      `Error updating appointment for office: ${officeName}, appointmentId: ${appointmentId}`,
+      error
     );
     throw error;
   }

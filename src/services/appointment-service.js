@@ -190,26 +190,37 @@ async function updateAppointmentInArray(
       ivAssignedDate,
       ivAssignedByUserName
     );
+
     if (!result.matchedCount) {
       throw new Error('Appointment not found or no matching office');
     }
 
-    // Retrieve the updated document
-    const updatedDocument = await Appointment.findOne({
-      officeName: officeName,
-      'appointments._id': appointmentId,
-    });
-
-    // Find the updated appointment in the appointments array
-    const updatedAppointment = updatedDocument.appointments.find(
-      (appointment) => appointment._id.toString() === appointmentId
+    // Use findOneAndUpdate with projection to get only the updated appointment in one query
+    const updatedDocument = await Appointment.findOne(
+      {
+        officeName: officeName,
+        'appointments._id': appointmentId,
+      },
+      {
+        'appointments.$': 1, // Project only the matched appointment
+        _id: 0,
+      }
     );
 
-    console.log('Updated Appointment', updatedAppointment);
+    if (
+      !updatedDocument ||
+      !updatedDocument.appointments ||
+      updatedDocument.appointments.length === 0
+    ) {
+      throw new Error('Failed to retrieve updated appointment');
+    }
+
+    const updatedAppointment = updatedDocument.appointments[0];
+    console.log('Updated Appointment:', updatedAppointment._id);
+
     return updatedAppointment;
   } catch (error) {
     console.log('Error at Service Layer in function updateAppointmentInArray');
-
     throw error;
   }
 }
