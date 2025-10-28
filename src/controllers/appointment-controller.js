@@ -1,14 +1,14 @@
-const AppointmentService = require('../services/appointment-service');
-const DropdownValuesRepository = require('../repository/dropdownValues-repository');
+const AppointmentService = require("../services/appointment-service");
+const DropdownValuesRepository = require("../repository/dropdownValues-repository");
 
 const fetchAndSaveAppointments = async (req, res) => {
   try {
     await AppointmentService.fetchDataAndStoreAppointments();
     res
       .status(200)
-      .json({ message: 'Appointments  1 fetched and saved succesfully' });
+      .json({ message: "Appointments  1 fetched and saved succesfully" });
   } catch (error) {
-    console.log('Error at fetchAndSaveAppointments - Controller layer');
+    console.log("Error at fetchAndSaveAppointments - Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
@@ -24,14 +24,23 @@ const fetchDataForSpecificOffice = async (req, res) => {
     );
     res.status(200).json({ appointments });
   } catch (error) {
-    console.log('Error at fetchDataForSpecificOffice- Controller layer');
+    console.log("Error at fetchDataForSpecificOffice- Controller layer");
     res.status(500).json({ message: error.message });
   }
 };
 
 const updateAppointmentInArray = async (req, res) => {
+  const startTime = Date.now();
   try {
-    console.log('controller');
+    console.log("=== CONTROLLER LAYER - updateAppointmentInArray ===");
+    console.log("Request received:", {
+      method: req.method,
+      url: req.url,
+      params: req.params,
+      body: req.body,
+      timestamp: new Date().toISOString(),
+    });
+
     const { officeName, appointmentId } = req.params;
     const {
       userId,
@@ -40,7 +49,35 @@ const updateAppointmentInArray = async (req, res) => {
       ivAssignedDate,
       ivAssignedByUserName,
     } = req.body;
-    console.log('officeName:', officeName, 'appointmentId:', appointmentId);
+
+    console.log("Parameters extracted:", {
+      officeName,
+      appointmentId,
+      userId,
+      status,
+      completionStatus,
+      ivAssignedDate,
+      ivAssignedByUserName,
+    });
+
+    // Validate required fields
+    if (!appointmentId) {
+      console.error("Validation error: appointmentId is required");
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId is required in path parameters",
+      });
+    }
+
+    if (!officeName) {
+      console.error("Validation error: officeName is required");
+      return res.status(400).json({
+        success: false,
+        message: "officeName is required in path parameters",
+      });
+    }
+
+    console.log("Calling service layer...");
     const updatedAppointment =
       await AppointmentService.updateAppointmentInArray(
         officeName,
@@ -51,11 +88,24 @@ const updateAppointmentInArray = async (req, res) => {
         ivAssignedDate,
         ivAssignedByUserName
       );
+
+    const duration = Date.now() - startTime;
+    console.log("=== CONTROLLER LAYER COMPLETE ===");
+    console.log("Response sent:", {
+      success: true,
+      duration: `${duration}ms`,
+      appointmentId: updatedAppointment?._id,
+    });
+
     res.status(200).json(updatedAppointment);
   } catch (error) {
-    console.log(
-      'Error at updateAppointmentInArray- fetchDataForSpecificOffice- Controller layer'
-    );
+    const duration = Date.now() - startTime;
+    console.error("=== CONTROLLER LAYER ERROR ===");
+    console.error("Error at updateAppointmentInArray:", {
+      error: error.message,
+      stack: error.stack,
+      duration: `${duration}ms`,
+    });
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -70,10 +120,10 @@ const createNewRushAppointment = async (req, res) => {
     );
     res
       .status(201)
-      .json({ message: 'Appointment created successfully', result });
+      .json({ message: "Appointment created successfully", result });
   } catch (error) {
     console.error(
-      'Error  createNewRushAppointment creating new appointment at Controller layer',
+      "Error  createNewRushAppointment creating new appointment at Controller layer",
       error
     );
     res.status(500).json({ message: error.message });
@@ -89,7 +139,7 @@ const fetchUserAppointments = async (req, res) => {
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'startDate and endDate are required query parameters',
+        message: "startDate and endDate are required query parameters",
       });
     }
 
@@ -100,14 +150,14 @@ const fetchUserAppointments = async (req, res) => {
     if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid date format. Please use YYYY-MM-DD format',
+        message: "Invalid date format. Please use YYYY-MM-DD format",
       });
     }
 
     if (startDateObj > endDateObj) {
       return res.status(400).json({
         success: false,
-        message: 'startDate cannot be later than endDate',
+        message: "startDate cannot be later than endDate",
       });
     }
 
@@ -116,7 +166,7 @@ const fetchUserAppointments = async (req, res) => {
       startDate,
       endDate
     );
-    console.log('Appointment response', appointments);
+    console.log("Appointment response", appointments);
     res.status(200).json({
       success: true,
       data: appointments,
@@ -127,7 +177,7 @@ const fetchUserAppointments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log('Error at fetchUserAppointments -Controller layer');
+    console.log("Error at fetchUserAppointments -Controller layer");
     res.status(500).json({
       success: false,
       message: error.message,
@@ -160,10 +210,10 @@ const updateIndividualAppointmentDetails = async (req, res) => {
 
     res.status(200).json(updatedAppointment);
   } catch (error) {
-    console.error('Error updating individual appointment details:', error);
+    console.error("Error updating individual appointment details:", error);
     res.status(500).send({
       error:
-        'Failed to update individual appointment details at Controller layer',
+        "Failed to update individual appointment details at Controller layer",
     });
   }
 };
@@ -176,7 +226,7 @@ const getAssignedCounts = async (req, res) => {
   if (!startDate || !endDate) {
     return res.status(400).json({
       success: false,
-      message: 'startDate and endDate are required query parameters',
+      message: "startDate and endDate are required query parameters",
     });
   }
 
@@ -187,14 +237,14 @@ const getAssignedCounts = async (req, res) => {
   if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid date format. Please use YYYY-MM-DD format',
+      message: "Invalid date format. Please use YYYY-MM-DD format",
     });
   }
 
   if (startDateObj > endDateObj) {
     return res.status(400).json({
       success: false,
-      message: 'startDate cannot be later than endDate',
+      message: "startDate cannot be later than endDate",
     });
   }
 
@@ -217,7 +267,7 @@ const getAssignedCounts = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch assigned counts.',
+      message: "Failed to fetch assigned counts.",
     });
   }
 };
@@ -227,7 +277,7 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
     const { startDate, endDate, dateType } = req.query;
 
     // Validate dateType parameter
-    if (dateType && !['appointmentDate', 'ivAssignedDate'].includes(dateType)) {
+    if (dateType && !["appointmentDate", "ivAssignedDate"].includes(dateType)) {
       return res.status(400).json({
         message:
           "Invalid dateType. Must be 'appointmentDate' or 'ivAssignedDate'",
@@ -235,7 +285,7 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
     }
 
     // Default to appointmentDate if dateType is not provided
-    const selectedDateType = dateType || 'appointmentDate';
+    const selectedDateType = dateType || "appointmentDate";
 
     const appointments =
       await AppointmentService.fetchUnassignedAppointmentsInRange(
@@ -243,11 +293,11 @@ const fetchUnassignedAppointmentsInRange = async (req, res) => {
         endDate,
         selectedDateType
       );
-    console.log('Appointments', appointments);
+    console.log("Appointments", appointments);
     res.status(200).json(appointments);
   } catch (error) {
     console.log(
-      'Error at fetchUnassignedAppointmentsInRange -Controller layer'
+      "Error at fetchUnassignedAppointmentsInRange -Controller layer"
     );
     res.status(500).json({ message: error.message });
   }
@@ -260,7 +310,7 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     // Validate dateType parameter
     if (
       dateType &&
-      !['appointmentDate', 'ivCompletedDate'].includes(dateType)
+      !["appointmentDate", "ivCompletedDate"].includes(dateType)
     ) {
       return res.status(400).json({
         message:
@@ -269,11 +319,11 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     }
 
     // Default to appointmentDate if dateType is not provided
-    const selectedDateType = dateType || 'appointmentDate';
+    const selectedDateType = dateType || "appointmentDate";
 
     // Fetch office names dynamically from dropdownValues collection
     const officeDropdown = await DropdownValuesRepository.findByCategory(
-      'Office'
+      "Office"
     );
 
     if (
@@ -303,7 +353,7 @@ const fetchCompletedAppointmentsByOffice = async (req, res) => {
     res.status(200).json(results);
   } catch (error) {
     console.log(
-      'Error at fetchCompletedAppointmentsByOffice- Controller layer'
+      "Error at fetchCompletedAppointmentsByOffice- Controller layer"
     );
     res.status(500).json({ message: error.message });
   }
@@ -313,49 +363,49 @@ const getAppointmentsByOfficeAndRemarks = async (req, res) => {
   try {
     const { officeName, startDate, endDate } = req.query;
     const remarks = [
-      'Appt Cancelled',
-      'Discounted Plan',
-      'Benefit maxed out as per ES',
-      'Dependent not enrolled',
-      'Future activation date',
-      'Inactive',
-      'Ineligible',
-      'Maxed Out',
-      'Medicaid IVs (Day Team)',
-      'Medicaid IVs for Future Dates (Day Team)',
-      'Medical Policy',
-      'Missing Insurance Details',
-      'No Dental Coverage',
-      'No OON Benefits',
-      'No OS Benefits',
-      'Not able to contact with rep',
-      'Not assigned to our office',
-      'Not Found over Call',
-      'office Closed',
-      'Only Ortho IV required as per ofc',
-      'Only OS IV required as per ofc',
-      'OS Patient',
-      'Indemnity plan',
-      'Rep denied to provide info',
-      'Repeated',
-      'Rush not Accepted',
-      'Terminated',
-      'Unable to retrive information',
-      'Wrong information',
-      'Provider not available on Provider Schedule',
-      'Not Found over web, Night IV need to call',
-      'Not found on web and call',
-      'Not accepting HMO patient',
-      'Missing Insurance Details, No info ES',
-      'Ortho/OS Provider on Scheduler',
-      'IV Return - TX on Exchange above 18 years',
-      'Office Is closed for the day, Patient need to reschedule.',
-      'Faxback Attached in Drive',
-      'Completed, Not assigned to Facility',
-      'Technical Issue - Not received OTP/Fax',
-      'Unable to check Provider/Facility Status',
-      'Updated ES, IV has not created',
-      'IV not created, Email sent for benefits',
+      "Appt Cancelled",
+      "Discounted Plan",
+      "Benefit maxed out as per ES",
+      "Dependent not enrolled",
+      "Future activation date",
+      "Inactive",
+      "Ineligible",
+      "Maxed Out",
+      "Medicaid IVs (Day Team)",
+      "Medicaid IVs for Future Dates (Day Team)",
+      "Medical Policy",
+      "Missing Insurance Details",
+      "No Dental Coverage",
+      "No OON Benefits",
+      "No OS Benefits",
+      "Not able to contact with rep",
+      "Not assigned to our office",
+      "Not Found over Call",
+      "office Closed",
+      "Only Ortho IV required as per ofc",
+      "Only OS IV required as per ofc",
+      "OS Patient",
+      "Indemnity plan",
+      "Rep denied to provide info",
+      "Repeated",
+      "Rush not Accepted",
+      "Terminated",
+      "Unable to retrive information",
+      "Wrong information",
+      "Provider not available on Provider Schedule",
+      "Not Found over web, Night IV need to call",
+      "Not found on web and call",
+      "Not accepting HMO patient",
+      "Missing Insurance Details, No info ES",
+      "Ortho/OS Provider on Scheduler",
+      "IV Return - TX on Exchange above 18 years",
+      "Office Is closed for the day, Patient need to reschedule.",
+      "Faxback Attached in Drive",
+      "Completed, Not assigned to Facility",
+      "Technical Issue - Not received OTP/Fax",
+      "Unable to check Provider/Facility Status",
+      "Updated ES, IV has not created",
+      "IV not created, Email sent for benefits",
     ];
     const appointments =
       await AppointmentService.getAppointmentsByOfficeAndRemarks(
@@ -364,11 +414,11 @@ const getAppointmentsByOfficeAndRemarks = async (req, res) => {
         endDate,
         remarks
       );
-    console.log('Appointments', appointments);
+    console.log("Appointments", appointments);
     res.status(200).json(appointments);
   } catch (error) {
     console.error(
-      'Error getAppointmentsByOfficeAndRemarks at controller layer fetching appointments: ',
+      "Error getAppointmentsByOfficeAndRemarks at controller layer fetching appointments: ",
       error
     );
     res.status(500).json({ message: error.message });
@@ -383,14 +433,14 @@ const getAppointmentCompletionAnalysis = async (req, res) => {
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'startDate and endDate are required query parameters',
+        message: "startDate and endDate are required query parameters",
       });
     }
 
     // Validate dateType parameter
     if (
       dateType &&
-      !['appointmentDate', 'ivCompletedDate'].includes(dateType)
+      !["appointmentDate", "ivCompletedDate"].includes(dateType)
     ) {
       return res.status(400).json({
         success: false,
@@ -400,7 +450,7 @@ const getAppointmentCompletionAnalysis = async (req, res) => {
     }
 
     // Validate ivType parameter
-    if (ivType && !['Normal', 'Rush'].includes(ivType)) {
+    if (ivType && !["Normal", "Rush"].includes(ivType)) {
       return res.status(400).json({
         success: false,
         message: "Invalid ivType. Must be 'Normal' or 'Rush'",
@@ -408,8 +458,8 @@ const getAppointmentCompletionAnalysis = async (req, res) => {
     }
 
     // Default values
-    const selectedDateType = dateType || 'appointmentDate';
-    const selectedIvType = ivType || 'Normal';
+    const selectedDateType = dateType || "appointmentDate";
+    const selectedIvType = ivType || "Normal";
 
     // Validate date format
     const startDateObj = new Date(startDate);
@@ -418,14 +468,14 @@ const getAppointmentCompletionAnalysis = async (req, res) => {
     if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid date format. Please use YYYY-MM-DD format',
+        message: "Invalid date format. Please use YYYY-MM-DD format",
       });
     }
 
     if (startDateObj > endDateObj) {
       return res.status(400).json({
         success: false,
-        message: 'startDate cannot be later than endDate',
+        message: "startDate cannot be later than endDate",
       });
     }
 
@@ -449,13 +499,13 @@ const getAppointmentCompletionAnalysis = async (req, res) => {
     });
   } catch (error) {
     console.error(
-      'Error at controller layer in appointment completion analysis:',
+      "Error at controller layer in appointment completion analysis:",
       error
     );
     res.status(500).json({
       success: false,
       message:
-        error.message || 'Failed to fetch appointment completion analysis',
+        error.message || "Failed to fetch appointment completion analysis",
     });
   }
 };
@@ -464,22 +514,22 @@ const debugAppointmentData = async (req, res) => {
   try {
     const { officeName } = req.query;
     const debugData = await AppointmentService.debugAppointmentData(
-      officeName || 'Tidwell'
+      officeName || "Tidwell"
     );
 
     res.status(200).json({
       success: true,
       data: debugData,
-      message: 'Debug data retrieved successfully',
+      message: "Debug data retrieved successfully",
     });
   } catch (error) {
     console.error(
-      'Error at controller layer in debug appointment data:',
+      "Error at controller layer in debug appointment data:",
       error
     );
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch debug data',
+      message: error.message || "Failed to fetch debug data",
     });
   }
 };
@@ -498,13 +548,13 @@ const getDynamicUnassignedAppointments = async (req, res) => {
     });
   } catch (error) {
     console.error(
-      'Error at controller layer in getDynamicUnassignedAppointments:',
+      "Error at controller layer in getDynamicUnassignedAppointments:",
       error
     );
     res.status(500).json({
       success: false,
       message:
-        error.message || 'Failed to fetch dynamic unassigned appointments',
+        error.message || "Failed to fetch dynamic unassigned appointments",
     });
   }
 };
@@ -518,19 +568,19 @@ const checkAppointmentCompletionStatus = async (req, res) => {
     if (!appointmentIds || !Array.isArray(appointmentIds)) {
       return res.status(400).json({
         success: false,
-        message: 'appointmentIds is required and must be an array',
+        message: "appointmentIds is required and must be an array",
       });
     }
 
     if (appointmentIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'appointmentIds array cannot be empty',
+        message: "appointmentIds array cannot be empty",
       });
     }
 
     // Validate each appointment ID format
-    const mongoose = require('mongoose');
+    const mongoose = require("mongoose");
     for (const appointmentId of appointmentIds) {
       if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
         return res.status(400).json({
@@ -552,12 +602,12 @@ const checkAppointmentCompletionStatus = async (req, res) => {
     });
   } catch (error) {
     console.error(
-      'Error at controller layer in checkAppointmentCompletionStatus:',
+      "Error at controller layer in checkAppointmentCompletionStatus:",
       error
     );
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to check appointment completion status',
+      message: error.message || "Failed to check appointment completion status",
     });
   }
 };
@@ -568,7 +618,7 @@ const aggregateAppointments = async (req, res) => {
     if (!Array.isArray(pipeline)) {
       return res
         .status(400)
-        .json({ success: false, message: 'pipeline must be an array' });
+        .json({ success: false, message: "pipeline must be an array" });
     }
     const result = await AppointmentService.aggregate(pipeline);
     res.json({ success: true, data: result });
