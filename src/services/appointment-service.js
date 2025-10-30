@@ -93,11 +93,13 @@ async function processOfficeAppointments(officeName) {
           const existingDate = new Date(existingAppointment.appointmentDate);
           const newDate = new Date(newAppointment.appointmentDate);
 
-          // Compare dates, patient ID
+          // Compare patientId, appointmentDate (date only), and insuranceName
           return (
             existingAppointment.patientId == newAppointment.patientId &&
-            existingDate.getDate() == newDate.getDate()
-            // && existingAppointment.insuranceName == newAppointment.insuranceName
+            existingDate.getDate() == newDate.getDate() &&
+            existingDate.getMonth() == newDate.getMonth() &&
+            existingDate.getFullYear() == newDate.getFullYear() &&
+            existingAppointment.insuranceName == newAppointment.insuranceName
           );
         });
         if (!isDuplicate) {
