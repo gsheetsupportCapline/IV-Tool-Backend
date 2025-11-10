@@ -551,7 +551,7 @@ async function getAppointmentCompletionAnalysis(
         },
         {
           $addFields: {
-            // Create appointment datetime by combining date and time - handle null/undefined appointmentTime
+            // Create appointment datetime by combining date and time (Already in CST)
             appointmentDateTime: {
               $cond: [
                 {
@@ -594,20 +594,67 @@ async function getAppointmentCompletionAnalysis(
                 '$appointments.appointmentDate',
               ],
             },
-            // Parse ivCompletedDate - handle both Date and String types
+            // Convert ivCompletedDate from IST to CST
             completedDateTime: {
               $cond: [
-                { $eq: [{ $type: '$appointments.ivCompletedDate' }, 'date'] },
-                '$appointments.ivCompletedDate',
+                { $ne: ['$appointments.ivCompletedDate', null] },
                 {
-                  $dateFromString: {
-                    dateString: '$appointments.ivCompletedDate',
-                    onError: null,
+                  $dateAdd: {
+                    startDate: {
+                      $cond: [
+                        {
+                          $eq: [
+                            { $type: '$appointments.ivCompletedDate' },
+                            'date',
+                          ],
+                        },
+                        '$appointments.ivCompletedDate',
+                        {
+                          $dateFromString: {
+                            dateString: '$appointments.ivCompletedDate',
+                            onError: null,
+                          },
+                        },
+                      ],
+                    },
+                    unit: 'minute',
+                    amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
                   },
                 },
+                null,
               ],
             },
-            // Check if appointment type is new patient related - improved regex and null handling
+            // Convert ivRequestedDate from IST to CST
+            requestedDateTime: {
+              $cond: [
+                { $ne: ['$appointments.ivRequestedDate', null] },
+                {
+                  $dateAdd: {
+                    startDate: {
+                      $cond: [
+                        {
+                          $eq: [
+                            { $type: '$appointments.ivRequestedDate' },
+                            'date',
+                          ],
+                        },
+                        '$appointments.ivRequestedDate',
+                        {
+                          $dateFromString: {
+                            dateString: '$appointments.ivRequestedDate',
+                            onError: null,
+                          },
+                        },
+                      ],
+                    },
+                    unit: 'minute',
+                    amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
+                  },
+                },
+                null,
+              ],
+            },
+            // Check if appointment type is new patient related
             isNewPatient: {
               $cond: [
                 { $ne: ['$appointments.appointmentType', null] },
@@ -625,6 +672,11 @@ async function getAppointmentCompletionAnalysis(
         {
           $match: {
             completedDateTime: { $ne: null },
+            // Filter: Only include IVs requested BEFORE appointment time (CST comparison)
+            // appointmentDateTime (CST) < requestedDateTime (CST converted)
+            $expr: {
+              $lt: ['$appointmentDateTime', '$requestedDateTime'],
+            },
           },
         },
         {
