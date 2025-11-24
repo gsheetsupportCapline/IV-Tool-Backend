@@ -153,6 +153,93 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
         $set: {
           'appointments.officeId': '$_id',
           'appointments.office': '$officeName',
+          // Extract month and year from appointment date
+          'appointments.appointmentMonth': {
+            $month: '$appointments.appointmentDate',
+          },
+          'appointments.appointmentYear': {
+            $year: '$appointments.appointmentDate',
+          },
+        },
+      },
+      // Self-lookup to check if same patient + insurance was completed BEFORE current appointment
+      // NOTE: This checks if there's ANY earlier completed appointment in the same month/year
+      {
+        $lookup: {
+          from: 'appointments',
+          let: {
+            patientId: '$appointments.patientId',
+            insuranceName: '$appointments.insuranceName',
+            appointmentMonth: '$appointments.appointmentMonth',
+            appointmentYear: '$appointments.appointmentYear',
+            currentAppointmentDate: '$appointments.appointmentDate',
+            currentAppointmentId: '$appointments._id',
+            currentOfficeName: '$officeName',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$officeName', '$$currentOfficeName'] },
+              },
+            },
+            { $unwind: '$appointments' },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    // Same patient
+                    { $eq: ['$appointments.patientId', '$$patientId'] },
+                    // Same insurance
+                    {
+                      $eq: ['$appointments.insuranceName', '$$insuranceName'],
+                    },
+                    // Same month
+                    {
+                      $eq: [
+                        { $month: '$appointments.appointmentDate' },
+                        '$$appointmentMonth',
+                      ],
+                    },
+                    // Same year
+                    {
+                      $eq: [
+                        { $year: '$appointments.appointmentDate' },
+                        '$$appointmentYear',
+                      ],
+                    },
+                    // Completion status is 'Completed'
+                    {
+                      $eq: ['$appointments.completionStatus', 'Completed'],
+                    },
+                    // Different appointment (not comparing with itself)
+                    {
+                      $ne: ['$appointments._id', '$$currentAppointmentId'],
+                    },
+                    // IMPORTANT: Completed BEFORE or ON the current appointment date
+                    {
+                      $lte: [
+                        '$appointments.appointmentDate',
+                        '$$currentAppointmentDate',
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 }, // Just need to know if exists
+          ],
+          as: 'previousCompletions',
+        },
+      },
+      {
+        $set: {
+          'appointments.isPreviouslyCompleted': {
+            $cond: {
+              if: { $gt: [{ $size: '$previousCompletions' }, 0] },
+              then: true,
+              else: false,
+            },
+          },
         },
       },
       {
