@@ -425,6 +425,129 @@ async function updateIndividualAppointmentDetails(
   }
 }
 
+async function bulkUpdateAppointmentDetails(appointmentsData) {
+  try {
+    const results = {
+      totalRequested: appointmentsData.length,
+      successfulUpdates: 0,
+      failedUpdates: 0,
+      details: [],
+    };
+
+    // Validate all appointments first
+    const validAppointments = [];
+    for (const appointmentData of appointmentsData) {
+      if (!appointmentData.appointmentId) {
+        results.failedUpdates++;
+        results.details.push({
+          appointmentId: appointmentData.appointmentId || 'unknown',
+          status: 'failed',
+          error: 'appointmentId is required',
+        });
+      } else {
+        validAppointments.push(appointmentData);
+      }
+    }
+
+    // If no valid appointments, return early
+    if (validAppointments.length === 0) {
+      return results;
+    }
+
+    // Process each appointment individually to track success/failure
+    // Using Promise.allSettled to handle all updates regardless of individual failures
+    const updatePromises = validAppointments.map(async (appointmentData) => {
+      const {
+        appointmentId,
+        ivRemarks,
+        source,
+        planType,
+        completedBy,
+        noteRemarks,
+        ivCompletedDate,
+      } = appointmentData;
+
+      try {
+        const updateResult = await Appointment.updateOne(
+          {
+            'appointments._id': appointmentId,
+          },
+          {
+            $set: {
+              'appointments.$[elem].ivRemarks': ivRemarks,
+              'appointments.$[elem].source': source,
+              'appointments.$[elem].planType': planType,
+              'appointments.$[elem].completionStatus': 'Completed',
+              'appointments.$[elem].completedBy': completedBy,
+              'appointments.$[elem].noteRemarks': noteRemarks,
+              'appointments.$[elem].ivCompletedDate': ivCompletedDate,
+            },
+          },
+          {
+            arrayFilters: [{ 'elem._id': appointmentId }],
+          }
+        );
+
+        return {
+          appointmentId,
+          success:
+            updateResult.matchedCount > 0 && updateResult.modifiedCount > 0,
+          matched: updateResult.matchedCount,
+          modified: updateResult.modifiedCount,
+        };
+      } catch (error) {
+        return {
+          appointmentId,
+          success: false,
+          error: error.message,
+        };
+      }
+    });
+
+    // Wait for all updates to complete
+    const updateResults = await Promise.allSettled(updatePromises);
+
+    // Process results
+    updateResults.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const updateInfo = result.value;
+        if (updateInfo.success) {
+          results.successfulUpdates++;
+          results.details.push({
+            appointmentId: updateInfo.appointmentId,
+            status: 'success',
+            matched: updateInfo.matched,
+            modified: updateInfo.modified,
+          });
+        } else {
+          results.failedUpdates++;
+          results.details.push({
+            appointmentId: updateInfo.appointmentId,
+            status: 'failed',
+            error:
+              updateInfo.error || 'Appointment not found or no changes made',
+          });
+        }
+      } else {
+        results.failedUpdates++;
+        results.details.push({
+          appointmentId: 'unknown',
+          status: 'failed',
+          error: result.reason?.message || 'Unknown error',
+        });
+      }
+    });
+
+    return results;
+  } catch (error) {
+    console.error(
+      'Error at service layer in bulk update appointment details:',
+      error
+    );
+    throw error;
+  }
+}
+
 async function getAssignedCountsByOffice(officeName, startDate, endDate) {
   const result = await AppointmentRepository.getAssignedCountsByOffice(
     officeName,
@@ -837,6 +960,7 @@ module.exports = {
   createNewRushAppointment,
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
+  bulkUpdateAppointmentDetails,
   getAssignedCountsByOffice,
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsCountByUser,

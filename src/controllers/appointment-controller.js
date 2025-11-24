@@ -168,6 +168,55 @@ const updateIndividualAppointmentDetails = async (req, res) => {
   }
 };
 
+const bulkUpdateAppointmentDetails = async (req, res) => {
+  try {
+    const { appointments } = req.body;
+
+    // Validate required fields
+    if (!appointments || !Array.isArray(appointments)) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointments array is required',
+      });
+    }
+
+    if (appointments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointments array cannot be empty',
+      });
+    }
+
+    // Validate each appointment has required fields
+    for (let i = 0; i < appointments.length; i++) {
+      const appointment = appointments[i];
+      if (!appointment.appointmentId) {
+        return res.status(400).json({
+          success: false,
+          message: `appointments[${i}].appointmentId is required`,
+        });
+      }
+    }
+
+    const results = await AppointmentService.bulkUpdateAppointmentDetails(
+      appointments
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Bulk update completed',
+      results,
+    });
+  } catch (error) {
+    console.error('Error in bulk update appointment details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to bulk update appointment details at Controller layer',
+      error: error.message,
+    });
+  }
+};
+
 const getAssignedCounts = async (req, res) => {
   const { officeName } = req.params;
   const { startDate, endDate } = req.query;
@@ -584,6 +633,7 @@ module.exports = {
   createNewRushAppointment,
   fetchUserAppointments,
   updateIndividualAppointmentDetails,
+  bulkUpdateAppointmentDetails,
   getAssignedCounts,
   fetchUnassignedAppointmentsInRange,
   fetchCompletedAppointmentsByOffice,

@@ -36,6 +36,11 @@ router.post(
   AppointmentController.updateIndividualAppointmentDetails
 );
 
+router.post(
+  '/bulk-update-appointment-details',
+  AppointmentController.bulkUpdateAppointmentDetails
+);
+
 router.get(
   '/assigned-counts/:officeName',
   AppointmentController.getAssignedCounts
