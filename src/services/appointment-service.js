@@ -465,6 +465,9 @@ async function bulkUpdateAppointmentDetails(appointmentsData) {
         completedBy,
         noteRemarks,
         ivCompletedDate,
+        assignedUser,
+        ivAssignedByUserName,
+        ivAssignedDate,
       } = appointmentData;
 
       try {
@@ -477,10 +480,14 @@ async function bulkUpdateAppointmentDetails(appointmentsData) {
               'appointments.$[elem].ivRemarks': ivRemarks,
               'appointments.$[elem].source': source,
               'appointments.$[elem].planType': planType,
+              'appointments.$[elem].status': 'Assigned',
               'appointments.$[elem].completionStatus': 'Completed',
               'appointments.$[elem].completedBy': completedBy,
               'appointments.$[elem].noteRemarks': noteRemarks,
               'appointments.$[elem].ivCompletedDate': ivCompletedDate,
+              'appointments.$[elem].assignedUser': assignedUser,
+              'appointments.$[elem].ivAssignedByUserName': ivAssignedByUserName,
+              'appointments.$[elem].ivAssignedDate': ivAssignedDate,
             },
           },
           {
