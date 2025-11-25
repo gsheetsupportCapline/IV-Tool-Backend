@@ -440,7 +440,7 @@ async function getAppointmentCompletionAnalysis(
     const results = [];
 
     for (const officeName of officeNames) {
-      // First get total completed IVs for this office (same for both categories)
+      // First get total completed IVs for this office with raw data
       const totalCompletedPipeline = [
         { $match: { officeName: officeName } },
         { $unwind: '$appointments' },
@@ -463,6 +463,66 @@ async function getAppointmentCompletionAnalysis(
                     ],
                   }
                 : '$appointments.appointmentDate',
+            // Convert ivRequestedDate IST to CST
+            requestedDateTime: {
+              $cond: [
+                { $ne: ['$appointments.ivRequestedDate', null] },
+                {
+                  $dateAdd: {
+                    startDate: {
+                      $cond: [
+                        {
+                          $eq: [
+                            { $type: '$appointments.ivRequestedDate' },
+                            'date',
+                          ],
+                        },
+                        '$appointments.ivRequestedDate',
+                        {
+                          $dateFromString: {
+                            dateString: '$appointments.ivRequestedDate',
+                            onError: null,
+                          },
+                        },
+                      ],
+                    },
+                    unit: 'minute',
+                    amount: -690,
+                  },
+                },
+                null,
+              ],
+            },
+            // Convert ivCompletedDate IST to CST
+            completedDateTime: {
+              $cond: [
+                { $ne: ['$appointments.ivCompletedDate', null] },
+                {
+                  $dateAdd: {
+                    startDate: {
+                      $cond: [
+                        {
+                          $eq: [
+                            { $type: '$appointments.ivCompletedDate' },
+                            'date',
+                          ],
+                        },
+                        '$appointments.ivCompletedDate',
+                        {
+                          $dateFromString: {
+                            dateString: '$appointments.ivCompletedDate',
+                            onError: null,
+                          },
+                        },
+                      ],
+                    },
+                    unit: 'minute',
+                    amount: -690,
+                  },
+                },
+                null,
+              ],
+            },
           },
         },
         {
@@ -489,13 +549,32 @@ async function getAppointmentCompletionAnalysis(
           },
         },
         {
-          $count: 'totalCount',
+          $group: {
+            _id: null,
+            totalCount: { $sum: 1 },
+            totalCompletedData: {
+              $push: {
+                patientId: '$appointments.patientId',
+                patientName: '$appointments.patientName',
+                insuranceName: '$appointments.insuranceName',
+                appointmentDate: '$appointments.appointmentDate',
+                appointmentTime: '$appointments.appointmentTime',
+                ivRequestedDateIST: '$appointments.ivRequestedDate',
+                ivRequestedDateTimeCST: '$requestedDateTime',
+                ivCompletedDateIST: '$appointments.ivCompletedDate',
+                ivCompletedDateTimeCST: '$completedDateTime',
+                ivAssignedDate: '$appointments.ivAssignedDate',
+              },
+            },
+          },
         },
       ];
 
       const totalResult = await Appointment.aggregate(totalCompletedPipeline);
       const totalCompletedIVs =
         totalResult.length > 0 ? totalResult[0].totalCount : 0;
+      const totalCompletedData =
+        totalResult.length > 0 ? totalResult[0].totalCompletedData : [];
 
       console.log(
         `Office: ${officeName}, Total completed IVs: ${totalCompletedIVs}`
@@ -551,6 +630,87 @@ async function getAppointmentCompletionAnalysis(
         },
         {
           $addFields: {
+            // Convert 12-hour time format (e.g., "10:00 AM") to 24-hour format
+            appointmentTime24Hour: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ['$appointments.appointmentTime', null] },
+                    { $ne: ['$appointments.appointmentTime', ''] },
+                  ],
+                },
+                {
+                  $let: {
+                    vars: {
+                      timeParts: {
+                        $split: ['$appointments.appointmentTime', ' '],
+                      },
+                    },
+                    in: {
+                      $let: {
+                        vars: {
+                          time: { $arrayElemAt: ['$$timeParts', 0] },
+                          period: { $arrayElemAt: ['$$timeParts', 1] },
+                          hourMin: {
+                            $split: [{ $arrayElemAt: ['$$timeParts', 0] }, ':'],
+                          },
+                        },
+                        in: {
+                          $let: {
+                            vars: {
+                              hour: {
+                                $toInt: { $arrayElemAt: ['$$hourMin', 0] },
+                              },
+                              minute: { $arrayElemAt: ['$$hourMin', 1] },
+                            },
+                            in: {
+                              $concat: [
+                                {
+                                  $cond: [
+                                    { $eq: ['$$period', 'PM'] },
+                                    {
+                                      $cond: [
+                                        { $eq: ['$$hour', 12] },
+                                        '12',
+                                        {
+                                          $toString: { $add: ['$$hour', 12] },
+                                        },
+                                      ],
+                                    },
+                                    {
+                                      $cond: [
+                                        { $eq: ['$$hour', 12] },
+                                        '00',
+                                        {
+                                          $cond: [
+                                            { $lt: ['$$hour', 10] },
+                                            {
+                                              $concat: [
+                                                '0',
+                                                { $toString: '$$hour' },
+                                              ],
+                                            },
+                                            { $toString: '$$hour' },
+                                          ],
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                },
+                                ':',
+                                '$$minute',
+                                ':00',
+                              ],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                null,
+              ],
+            },
             // Create appointment datetime by combining date and time (Already in CST)
             appointmentDateTime: {
               $cond: [
@@ -572,20 +732,185 @@ async function getAppointmentCompletionAnalysis(
                         },
                         'T',
                         {
-                          $cond: [
-                            {
-                              $gte: [
-                                { $strLenCP: '$appointments.appointmentTime' },
-                                8,
+                          $let: {
+                            vars: {
+                              timeParts: {
+                                $split: ['$appointments.appointmentTime', ' '],
+                              },
+                              hasColon: {
+                                $gt: [
+                                  {
+                                    $indexOfBytes: [
+                                      '$appointments.appointmentTime',
+                                      ':',
+                                    ],
+                                  },
+                                  -1,
+                                ],
+                              },
+                            },
+                            in: {
+                              $cond: [
+                                // Check if already in 24-hour format (HH:MM:SS or HH:MM)
+                                {
+                                  $and: [
+                                    { $eq: [{ $size: '$$timeParts' }, 1] },
+                                    '$$hasColon',
+                                  ],
+                                },
+                                // Already 24-hour format, use as-is (add :00 if needed)
+                                {
+                                  $let: {
+                                    vars: {
+                                      timeLength: {
+                                        $strLenCP:
+                                          '$appointments.appointmentTime',
+                                      },
+                                    },
+                                    in: {
+                                      $cond: [
+                                        { $eq: ['$$timeLength', 5] },
+                                        {
+                                          $concat: [
+                                            '$appointments.appointmentTime',
+                                            ':00',
+                                          ],
+                                        },
+                                        {
+                                          $cond: [
+                                            { $eq: ['$$timeLength', 8] },
+                                            '$appointments.appointmentTime',
+                                            {
+                                              $concat: [
+                                                '$appointments.appointmentTime',
+                                                ':00',
+                                              ],
+                                            },
+                                          ],
+                                        },
+                                      ],
+                                    },
+                                  },
+                                },
+                                // Parse 12-hour format with AM/PM
+                                {
+                                  $let: {
+                                    vars: {
+                                      time: {
+                                        $arrayElemAt: ['$$timeParts', 0],
+                                      },
+                                      period: {
+                                        $arrayElemAt: ['$$timeParts', 1],
+                                      },
+                                      hourMin: {
+                                        $split: [
+                                          { $arrayElemAt: ['$$timeParts', 0] },
+                                          ':',
+                                        ],
+                                      },
+                                    },
+                                    in: {
+                                      $let: {
+                                        vars: {
+                                          hour: {
+                                            $toInt: {
+                                              $arrayElemAt: ['$$hourMin', 0],
+                                            },
+                                          },
+                                          minute: {
+                                            $ifNull: [
+                                              {
+                                                $arrayElemAt: ['$$hourMin', 1],
+                                              },
+                                              '00',
+                                            ],
+                                          },
+                                        },
+                                        in: {
+                                          $concat: [
+                                            {
+                                              $cond: [
+                                                { $eq: ['$$period', 'PM'] },
+                                                {
+                                                  $cond: [
+                                                    { $eq: ['$$hour', 12] },
+                                                    '12',
+                                                    {
+                                                      $toString: {
+                                                        $add: ['$$hour', 12],
+                                                      },
+                                                    },
+                                                  ],
+                                                },
+                                                {
+                                                  $cond: [
+                                                    { $eq: ['$$period', 'AM'] },
+                                                    {
+                                                      $cond: [
+                                                        {
+                                                          $eq: ['$$hour', 12],
+                                                        },
+                                                        '00',
+                                                        {
+                                                          $cond: [
+                                                            {
+                                                              $lt: [
+                                                                '$$hour',
+                                                                10,
+                                                              ],
+                                                            },
+                                                            {
+                                                              $concat: [
+                                                                '0',
+                                                                {
+                                                                  $toString:
+                                                                    '$$hour',
+                                                                },
+                                                              ],
+                                                            },
+                                                            {
+                                                              $toString:
+                                                                '$$hour',
+                                                            },
+                                                          ],
+                                                        },
+                                                      ],
+                                                    },
+                                                    {
+                                                      $cond: [
+                                                        {
+                                                          $lt: ['$$hour', 10],
+                                                        },
+                                                        {
+                                                          $concat: [
+                                                            '0',
+                                                            {
+                                                              $toString:
+                                                                '$$hour',
+                                                            },
+                                                          ],
+                                                        },
+                                                        { $toString: '$$hour' },
+                                                      ],
+                                                    },
+                                                  ],
+                                                },
+                                              ],
+                                            },
+                                            ':',
+                                            '$$minute',
+                                            ':00',
+                                          ],
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
                               ],
                             },
-                            {
-                              $substr: ['$appointments.appointmentTime', 0, 8],
-                            },
-                            '$appointments.appointmentTime',
-                          ],
+                          },
                         },
-                        ':00.000Z',
+                        '.000Z',
                       ],
                     },
                     onError: '$appointments.appointmentDate',
@@ -670,29 +995,74 @@ async function getAppointmentCompletionAnalysis(
           },
         },
         {
+          $addFields: {
+            // For Rush IV: If requested within 1 hour before appointment, add 1 hour buffer to requested time
+            // Otherwise, use appointment time as the threshold
+            effectiveThresholdTime: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$appointments.ivType', 'Rush'] },
+                    { $ne: ['$requestedDateTime', null] },
+                    { $ne: ['$appointmentDateTime', null] },
+                    { $lt: ['$requestedDateTime', '$appointmentDateTime'] }, // Requested before appointment
+                    {
+                      $lte: [
+                        {
+                          $subtract: [
+                            '$appointmentDateTime',
+                            '$requestedDateTime',
+                          ],
+                        },
+                        3600000, // Within 1 hour (in milliseconds)
+                      ],
+                    },
+                  ],
+                },
+                // Rush IV requested within 1 hour before appointment: add 1 hour buffer to requested time
+                {
+                  $dateAdd: {
+                    startDate: '$requestedDateTime',
+                    unit: 'millisecond',
+                    amount: 3600000, // Add 1 hour
+                  },
+                },
+                // Normal IV or Rush IV requested >1 hour before: use appointment time
+                '$appointmentDateTime',
+              ],
+            },
+          },
+        },
+        {
           $match: {
             completedDateTime: { $ne: null },
+            requestedDateTime: { $ne: null },
+            appointmentDateTime: { $ne: null },
             // Filter: Only include IVs requested BEFORE appointment time (CST comparison)
-            // appointmentDateTime (CST) < requestedDateTime (CST converted)
+            // requestedDateTime (CST) < appointmentDateTime (CST)
+            // Means: IV was requested BEFORE the appointment time
             $expr: {
-              $lt: ['$appointmentDateTime', '$requestedDateTime'],
+              $lt: ['$requestedDateTime', '$appointmentDateTime'],
             },
           },
         },
         {
           $addFields: {
-            // Check if completed after appointment time
+            // Check if completed after appointment time (or after buffer time for Rush IV)
             completedAfterAppointment: {
-              $gt: ['$completedDateTime', '$appointmentDateTime'],
+              $gt: ['$completedDateTime', '$effectiveThresholdTime'],
             },
-            // Check if completed within 1 hour
+            // Check if completed within 1 hour (using effectiveThresholdTime as base)
             completedWithinOneHour: {
               $and: [
-                { $gt: ['$completedDateTime', '$appointmentDateTime'] },
+                { $gt: ['$completedDateTime', '$effectiveThresholdTime'] },
                 {
                   $lte: [
                     {
-                      $subtract: ['$completedDateTime', '$appointmentDateTime'],
+                      $subtract: [
+                        '$completedDateTime',
+                        '$effectiveThresholdTime',
+                      ],
                     },
                     3600000, // 1 hour in milliseconds
                   ],
@@ -714,13 +1084,64 @@ async function getAppointmentCompletionAnalysis(
             completedWithinOneHourCount: {
               $sum: { $cond: ['$completedWithinOneHour', 1, 0] },
             },
-            // Debug data
-            sampleData: {
+            // All completed IVs data
+            allCompletedAppointments: {
               $push: {
-                appointmentType: '$appointments.appointmentType',
+                patientId: '$appointments.patientId',
+                patientName: '$appointments.patientName',
+                insuranceName: '$appointments.insuranceName',
+                appointmentDate: '$appointments.appointmentDate',
                 appointmentTime: '$appointments.appointmentTime',
-                ivCompletedDate: '$appointments.ivCompletedDate',
-                isNewPatient: '$isNewPatient',
+                appointmentDateTimeCST: '$appointmentDateTime',
+                ivRequestedDateIST: '$appointments.ivRequestedDate',
+                ivRequestedDateTimeCST: '$requestedDateTime',
+                ivCompletedDateIST: '$appointments.ivCompletedDate',
+                ivCompletedDateTimeCST: '$completedDateTime',
+                ivAssignedDate: '$appointments.ivAssignedDate',
+              },
+            },
+            // Completed AFTER appointment time data
+            completedAfterAppointmentData: {
+              $push: {
+                $cond: [
+                  '$completedAfterAppointment',
+                  {
+                    patientId: '$appointments.patientId',
+                    patientName: '$appointments.patientName',
+                    insuranceName: '$appointments.insuranceName',
+                    appointmentDate: '$appointments.appointmentDate',
+                    appointmentTime: '$appointments.appointmentTime',
+                    appointmentDateTimeCST: '$appointmentDateTime',
+                    ivRequestedDateIST: '$appointments.ivRequestedDate',
+                    ivRequestedDateTimeCST: '$requestedDateTime',
+                    ivCompletedDateIST: '$appointments.ivCompletedDate',
+                    ivCompletedDateTimeCST: '$completedDateTime',
+                    ivAssignedDate: '$appointments.ivAssignedDate',
+                  },
+                  '$$REMOVE',
+                ],
+              },
+            },
+            // Completed WITHIN one hour data
+            completedWithinOneHourData: {
+              $push: {
+                $cond: [
+                  '$completedWithinOneHour',
+                  {
+                    patientId: '$appointments.patientId',
+                    patientName: '$appointments.patientName',
+                    insuranceName: '$appointments.insuranceName',
+                    appointmentDate: '$appointments.appointmentDate',
+                    appointmentTime: '$appointments.appointmentTime',
+                    appointmentDateTimeCST: '$appointmentDateTime',
+                    ivRequestedDateIST: '$appointments.ivRequestedDate',
+                    ivRequestedDateTimeCST: '$requestedDateTime',
+                    ivCompletedDateIST: '$appointments.ivCompletedDate',
+                    ivCompletedDateTimeCST: '$completedDateTime',
+                    ivAssignedDate: '$appointments.ivAssignedDate',
+                  },
+                  '$$REMOVE',
+                ],
               },
             },
           },
@@ -759,37 +1180,51 @@ async function getAppointmentCompletionAnalysis(
       const officeData = {
         officeName: officeName,
         totalCompletedIVs: totalCompletedIVs, // Same for both categories
+        totalCompletedData: totalCompletedData, // Raw data for all completed IVs
         newPatient: {
           completedAfterAppointmentCount: 0,
           completedWithinOneHourCount: 0,
           afterAppointmentCompletionPercentage: 0,
+          allCompletedAppointments: [],
+          completedAfterAppointmentData: [],
+          completedWithinOneHourData: [],
         },
         others: {
           completedAfterAppointmentCount: 0,
           completedWithinOneHourCount: 0,
           afterAppointmentCompletionPercentage: 0,
+          allCompletedAppointments: [],
+          completedAfterAppointmentData: [],
+          completedWithinOneHourData: [],
         },
       };
 
       // Process results
       officeResults.forEach((result) => {
+        const afterAppointmentData = result.completedAfterAppointmentData || [];
+        const withinOneHourData = result.completedWithinOneHourData || [];
+
         if (result._id.isNewPatient) {
           officeData.newPatient = {
-            completedAfterAppointmentCount:
-              result.completedAfterAppointmentCount,
-            completedWithinOneHourCount: result.completedWithinOneHourCount,
+            completedAfterAppointmentCount: afterAppointmentData.length,
+            completedWithinOneHourCount: withinOneHourData.length,
             afterAppointmentCompletionPercentage:
               Math.round(result.afterAppointmentCompletionPercentage * 100) /
-              100,
+                100 || 0,
+            allCompletedAppointments: result.allCompletedAppointments || [],
+            completedAfterAppointmentData: afterAppointmentData,
+            completedWithinOneHourData: withinOneHourData,
           };
         } else {
           officeData.others = {
-            completedAfterAppointmentCount:
-              result.completedAfterAppointmentCount,
-            completedWithinOneHourCount: result.completedWithinOneHourCount,
+            completedAfterAppointmentCount: afterAppointmentData.length,
+            completedWithinOneHourCount: withinOneHourData.length,
             afterAppointmentCompletionPercentage:
               Math.round(result.afterAppointmentCompletionPercentage * 100) /
-              100,
+                100 || 0,
+            allCompletedAppointments: result.allCompletedAppointments || [],
+            completedAfterAppointmentData: afterAppointmentData,
+            completedWithinOneHourData: withinOneHourData,
           };
         }
       });
