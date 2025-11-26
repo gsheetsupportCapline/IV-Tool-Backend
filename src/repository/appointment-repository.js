@@ -659,28 +659,32 @@ async function getAppointmentCompletionAnalysis(
                           $let: {
                             vars: {
                               hour: {
-                                $toInt: { $arrayElemAt: ['$$hourMin', 0] },
+                                $convert: {
+                                  input: { $arrayElemAt: ['$$hourMin', 0] },
+                                  to: 'int',
+                                  onError: null,
+                                  onNull: null,
+                                },
                               },
                               minute: { $arrayElemAt: ['$$hourMin', 1] },
                             },
                             in: {
-                              $concat: [
+                              $cond: [
+                                // If hour conversion failed (null), return null
+                                { $eq: ['$$hour', null] },
+                                null,
+                                // If period is null/empty, it's 24-hour format - use hour as-is
                                 {
                                   $cond: [
-                                    { $eq: ['$$period', 'PM'] },
                                     {
-                                      $cond: [
-                                        { $eq: ['$$hour', 12] },
-                                        '12',
-                                        {
-                                          $toString: { $add: ['$$hour', 12] },
-                                        },
+                                      $or: [
+                                        { $eq: ['$$period', null] },
+                                        { $eq: ['$$period', ''] },
                                       ],
                                     },
+                                    // 24-hour format: use hour directly
                                     {
-                                      $cond: [
-                                        { $eq: ['$$hour', 12] },
-                                        '00',
+                                      $concat: [
                                         {
                                           $cond: [
                                             { $lt: ['$$hour', 10] },
@@ -693,13 +697,55 @@ async function getAppointmentCompletionAnalysis(
                                             { $toString: '$$hour' },
                                           ],
                                         },
+                                        ':',
+                                        '$$minute',
+                                        ':00',
+                                      ],
+                                    },
+                                    // 12-hour format with AM/PM
+                                    {
+                                      $concat: [
+                                        {
+                                          $cond: [
+                                            { $eq: ['$$period', 'PM'] },
+                                            {
+                                              $cond: [
+                                                { $eq: ['$$hour', 12] },
+                                                '12',
+                                                {
+                                                  $toString: {
+                                                    $add: ['$$hour', 12],
+                                                  },
+                                                },
+                                              ],
+                                            },
+                                            {
+                                              $cond: [
+                                                { $eq: ['$$hour', 12] },
+                                                '00',
+                                                {
+                                                  $cond: [
+                                                    { $lt: ['$$hour', 10] },
+                                                    {
+                                                      $concat: [
+                                                        '0',
+                                                        { $toString: '$$hour' },
+                                                      ],
+                                                    },
+                                                    { $toString: '$$hour' },
+                                                  ],
+                                                },
+                                              ],
+                                            },
+                                          ],
+                                        },
+                                        ':',
+                                        '$$minute',
+                                        ':00',
                                       ],
                                     },
                                   ],
                                 },
-                                ':',
-                                '$$minute',
-                                ':00',
                               ],
                             },
                           },
@@ -813,8 +859,13 @@ async function getAppointmentCompletionAnalysis(
                                       $let: {
                                         vars: {
                                           hour: {
-                                            $toInt: {
-                                              $arrayElemAt: ['$$hourMin', 0],
+                                            $convert: {
+                                              input: {
+                                                $arrayElemAt: ['$$hourMin', 0],
+                                              },
+                                              to: 'int',
+                                              onError: null,
+                                              onNull: null,
                                             },
                                           },
                                           minute: {
@@ -827,60 +878,25 @@ async function getAppointmentCompletionAnalysis(
                                           },
                                         },
                                         in: {
-                                          $concat: [
+                                          $cond: [
+                                            // If hour conversion failed (null), return null
+                                            { $eq: ['$$hour', null] },
+                                            null,
+                                            // If period is null/empty, it's 24-hour format - use hour as-is
                                             {
                                               $cond: [
-                                                { $eq: ['$$period', 'PM'] },
                                                 {
-                                                  $cond: [
-                                                    { $eq: ['$$hour', 12] },
-                                                    '12',
-                                                    {
-                                                      $toString: {
-                                                        $add: ['$$hour', 12],
-                                                      },
-                                                    },
+                                                  $or: [
+                                                    { $eq: ['$$period', null] },
+                                                    { $eq: ['$$period', ''] },
                                                   ],
                                                 },
+                                                // 24-hour format: use hour directly
                                                 {
-                                                  $cond: [
-                                                    { $eq: ['$$period', 'AM'] },
+                                                  $concat: [
                                                     {
                                                       $cond: [
-                                                        {
-                                                          $eq: ['$$hour', 12],
-                                                        },
-                                                        '00',
-                                                        {
-                                                          $cond: [
-                                                            {
-                                                              $lt: [
-                                                                '$$hour',
-                                                                10,
-                                                              ],
-                                                            },
-                                                            {
-                                                              $concat: [
-                                                                '0',
-                                                                {
-                                                                  $toString:
-                                                                    '$$hour',
-                                                                },
-                                                              ],
-                                                            },
-                                                            {
-                                                              $toString:
-                                                                '$$hour',
-                                                            },
-                                                          ],
-                                                        },
-                                                      ],
-                                                    },
-                                                    {
-                                                      $cond: [
-                                                        {
-                                                          $lt: ['$$hour', 10],
-                                                        },
+                                                        { $lt: ['$$hour', 10] },
                                                         {
                                                           $concat: [
                                                             '0',
@@ -893,13 +909,117 @@ async function getAppointmentCompletionAnalysis(
                                                         { $toString: '$$hour' },
                                                       ],
                                                     },
+                                                    ':',
+                                                    '$$minute',
+                                                    ':00',
+                                                  ],
+                                                },
+                                                // 12-hour format with AM/PM
+                                                {
+                                                  $concat: [
+                                                    {
+                                                      $cond: [
+                                                        {
+                                                          $eq: [
+                                                            '$$period',
+                                                            'PM',
+                                                          ],
+                                                        },
+                                                        {
+                                                          $cond: [
+                                                            {
+                                                              $eq: [
+                                                                '$$hour',
+                                                                12,
+                                                              ],
+                                                            },
+                                                            '12',
+                                                            {
+                                                              $toString: {
+                                                                $add: [
+                                                                  '$$hour',
+                                                                  12,
+                                                                ],
+                                                              },
+                                                            },
+                                                          ],
+                                                        },
+                                                        {
+                                                          $cond: [
+                                                            {
+                                                              $eq: [
+                                                                '$$period',
+                                                                'AM',
+                                                              ],
+                                                            },
+                                                            {
+                                                              $cond: [
+                                                                {
+                                                                  $eq: [
+                                                                    '$$hour',
+                                                                    12,
+                                                                  ],
+                                                                },
+                                                                '00',
+                                                                {
+                                                                  $cond: [
+                                                                    {
+                                                                      $lt: [
+                                                                        '$$hour',
+                                                                        10,
+                                                                      ],
+                                                                    },
+                                                                    {
+                                                                      $concat: [
+                                                                        '0',
+                                                                        {
+                                                                          $toString:
+                                                                            '$$hour',
+                                                                        },
+                                                                      ],
+                                                                    },
+                                                                    {
+                                                                      $toString:
+                                                                        '$$hour',
+                                                                    },
+                                                                  ],
+                                                                },
+                                                              ],
+                                                            },
+                                                            {
+                                                              $cond: [
+                                                                {
+                                                                  $lt: [
+                                                                    '$$hour',
+                                                                    10,
+                                                                  ],
+                                                                },
+                                                                {
+                                                                  $concat: [
+                                                                    '0',
+                                                                    {
+                                                                      $toString:
+                                                                        '$$hour',
+                                                                    },
+                                                                  ],
+                                                                },
+                                                                {
+                                                                  $toString:
+                                                                    '$$hour',
+                                                                },
+                                                              ],
+                                                            },
+                                                          ],
+                                                        },
+                                                      ],
+                                                    },
+                                                    ':',
+                                                    '$$minute',
+                                                    ':00',
                                                   ],
                                                 },
                                               ],
                                             },
-                                            ':',
-                                            '$$minute',
-                                            ':00',
                                           ],
                                         },
                                       },
@@ -913,7 +1033,7 @@ async function getAppointmentCompletionAnalysis(
                         '.000Z',
                       ],
                     },
-                    onError: '$appointments.appointmentDate',
+                    onError: null,
                   },
                 },
                 '$appointments.appointmentDate',
