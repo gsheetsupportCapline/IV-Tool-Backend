@@ -1,4 +1,4 @@
-const Appointment = require('../models/appointment');
+const Appointment = require("../models/appointment");
 
 const OfficeDataRepository = {
   getOfficeDataByDateRange: async (fromDate, toDate, dateFieldName) => {
@@ -11,85 +11,48 @@ const OfficeDataRepository = {
       endDate.setDate(endDate.getDate() + 1);
       endDate.setHours(0, 0, 0, 0);
 
-      console.log('Office data repository parameters:', {
+      console.log("Office data repository parameters:", {
         fromDate,
         toDate,
         dateFieldName,
-        conversionNote:
-          dateFieldName === 'appointments.ivCompletedDate'
-            ? 'Will convert IST to CST in pipeline'
-            : 'No conversion needed',
       });
 
       // Build the aggregation pipeline
       const pipeline = [
         // Unwind appointments array to work with individual appointments
-        { $unwind: '$appointments' },
-
-        // Add CST conversion stage if dateFieldName is ivCompletedDate
-        ...(dateFieldName === 'appointments.ivCompletedDate'
-          ? [
-              {
-                $addFields: {
-                  // Convert IST to CST if dateFieldName is ivCompletedDate
-                  convertedDate: {
-                    $cond: [
-                      { $ne: ['$appointments.ivCompletedDate', null] },
-                      {
-                        $dateAdd: {
-                          startDate: '$appointments.ivCompletedDate',
-                          unit: 'minute',
-                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
-                        },
-                      },
-                      null,
-                    ],
-                  },
-                },
-              },
-            ]
-          : []),
+        { $unwind: "$appointments" },
 
         // Match appointments within date range
         {
           $match: {
-            ...(dateFieldName === 'appointments.ivCompletedDate'
-              ? {
-                  convertedDate: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                }
-              : {
-                  [dateFieldName]: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                }),
+            [dateFieldName]: {
+              $gte: startDate,
+              $lt: endDate,
+            },
           },
         },
 
         // Add office name to each appointment
         {
           $addFields: {
-            'appointments.officeName': '$officeName',
+            "appointments.officeName": "$officeName",
           },
         },
 
         // Replace root with appointment data
         {
-          $replaceRoot: { newRoot: '$appointments' },
+          $replaceRoot: { newRoot: "$appointments" },
         },
 
         // Lookup user details from users collection
         {
           $lookup: {
-            from: 'users', // Name of the users collection
-            let: { assignedUserId: { $toObjectId: '$assignedUser' } }, // Convert string ID to ObjectId
+            from: "users", // Name of the users collection
+            let: { assignedUserId: { $toObjectId: "$assignedUser" } }, // Convert string ID to ObjectId
             pipeline: [
               {
                 $match: {
-                  $expr: { $eq: ['$_id', '$$assignedUserId'] },
+                  $expr: { $eq: ["$_id", "$$assignedUserId"] },
                 },
               },
               {
@@ -99,7 +62,7 @@ const OfficeDataRepository = {
                 },
               },
             ],
-            as: 'userDetails',
+            as: "userDetails",
           },
         },
 
@@ -108,9 +71,9 @@ const OfficeDataRepository = {
           $addFields: {
             assignedUserName: {
               $cond: {
-                if: { $gt: [{ $size: '$userDetails' }, 0] },
-                then: { $arrayElemAt: ['$userDetails.name', 0] },
-                else: 'Unknown User',
+                if: { $gt: [{ $size: "$userDetails" }, 0] },
+                then: { $arrayElemAt: ["$userDetails.name", 0] },
+                else: "Unknown User",
               },
             },
           },
@@ -118,13 +81,13 @@ const OfficeDataRepository = {
 
         // Remove the temporary userDetails field
         {
-          $unset: 'userDetails',
+          $unset: "userDetails",
         },
 
         // Sort by date and time
         {
           $sort: {
-            [dateFieldName.replace('appointments.', '')]: 1,
+            [dateFieldName.replace("appointments.", "")]: 1,
             appointmentTime: 1,
           },
         },
@@ -140,7 +103,7 @@ const OfficeDataRepository = {
       return appointments;
     } catch (error) {
       console.error(
-        'Error at OfficeDataRepository.getOfficeDataByDateRange:',
+        "Error at OfficeDataRepository.getOfficeDataByDateRange:",
         error
       );
       throw error;
