@@ -688,9 +688,14 @@ async function fetchUnassignedAppointmentsInRange(
       {
         $match: {
           $or: [
-            { "appointments.completionStatus": { $ne: "Completed" } },
-            { "appointments.status": "Unassigned" },
+            {
+              "appointments.status": "Unassigned",
+            },
+            {
+              "appointments.completionStatus": "In Process",
+            },
           ],
+          "appointments.completedBy": { $ne: "Temp" },
           [dateFieldName]: {
             $gte: new Date(startDateISO),
             $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
