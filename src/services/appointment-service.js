@@ -1,5 +1,6 @@
 // appointment-service.js
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
 const DropdownValuesRepository = require("../repository/dropdownValues-repository");
@@ -48,6 +49,11 @@ async function processOfficeAppointments(officeName) {
       const dateTimeString = appointmentData.c5.split(" ");
       const [datePart, timePart] = dateTimeString;
       const appointmentDate = datePart;
+
+      // Get current date/time in America/Chicago timezone (Texas)
+      // This automatically handles CST (UTC-6) and CDT (UTC-5) with Daylight Saving Time
+      const texasTime = moment.tz("America/Chicago").toDate();
+
       return {
         appointmentDate: appointmentDate,
         appointmentTime: timePart.substring(0, 8),
@@ -69,7 +75,7 @@ async function processOfficeAppointments(officeName) {
         homePhone: appointmentData.c18,
         workPhone: appointmentData.c19,
         patientDOB: appointmentData.c20,
-        ivRequestedDate: new Date(),
+        ivRequestedDate: texasTime,
       };
     });
 
