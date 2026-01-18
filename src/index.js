@@ -38,7 +38,7 @@ app.use("/api/user-update", userUpdateRoutes);
 app.use("/api/office-data", officeDataRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
-// setupJob(); // setup Cron Job - DISABLED for data migration
+setupJob(); // setup Cron Job - Re-enabled after flat structure migration
 
 app.listen(PORT, async () => {
   console.log(`Server started at PORT :${PORT}`);
