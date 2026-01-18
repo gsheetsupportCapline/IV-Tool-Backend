@@ -28,9 +28,33 @@ async function fetchDataAndStoreAppointments() {
     const officeNames = officeDropdown.options.map((option) => option.name);
     console.log("Fetched office names from database:", officeNames);
 
+    const results = [];
+    let totalFetched = 0;
+    let totalNewAdded = 0;
+
     for (const officeName of officeNames) {
-      await processOfficeAppointments(officeName);
+      const result = await processOfficeAppointments(officeName);
+      results.push(result);
+      totalFetched += result.fetchedCount;
+      totalNewAdded += result.newCount;
     }
+
+    const summary = {
+      success: true,
+      timestamp: new Date(),
+      totalOffices: officeNames.length,
+      totalFetched: totalFetched,
+      totalNewAdded: totalNewAdded,
+      officeDetails: results,
+    };
+
+    console.log("\n=== Fetch Summary ===");
+    console.log(`Total Offices Processed: ${summary.totalOffices}`);
+    console.log(`Total Appointments Fetched: ${summary.totalFetched}`);
+    console.log(`Total New Appointments Added: ${summary.totalNewAdded}`);
+    console.log("=====================\n");
+
+    return summary;
   } catch (error) {
     console.log("Error at Service Layer fetchDataAndStoreAppointments");
     console.error("Error fetching and storing data:", error);
@@ -119,10 +143,23 @@ async function processOfficeAppointments(officeName) {
     } else {
       console.log("No new appointments to add for office:", officeName);
     }
+
+    return {
+      officeName: officeName,
+      fetchedCount: newAppointments.length,
+      newCount: appointmentsToAdd.length,
+      status: "success",
+    };
   } catch (error) {
     console.log("Error processing office appointments for:", officeName);
     console.error("Error:", error);
-    throw error;
+    return {
+      officeName: officeName,
+      fetchedCount: 0,
+      newCount: 0,
+      status: "error",
+      error: error.message,
+    };
   }
 }
 
