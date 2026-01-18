@@ -8,9 +8,8 @@ const DropdownValuesRepository = require("../repository/dropdownValues-repositor
 async function fetchDataAndStoreAppointments() {
   try {
     // Fetch office names dynamically from dropdownValues collection
-    const officeDropdown = await DropdownValuesRepository.findByCategory(
-      "Office"
-    );
+    const officeDropdown =
+      await DropdownValuesRepository.findByCategory("Office");
 
     console.log("Office Dropdown Result:", officeDropdown);
     console.log("Options:", officeDropdown?.options);
@@ -21,7 +20,7 @@ async function fetchDataAndStoreAppointments() {
       officeDropdown.options.length === 0
     ) {
       throw new Error(
-        'No office names found in dropdownValues collection with category "Office"'
+        'No office names found in dropdownValues collection with category "Office"',
       );
     }
 
@@ -116,10 +115,10 @@ async function processOfficeAppointments(officeName) {
         // Update the office document with truly new appointments
         await Appointment.updateOne(
           { officeName: officeName },
-          { $push: { appointments: { $each: appointmentsToAdd } } }
+          { $push: { appointments: { $each: appointmentsToAdd } } },
         );
         console.log(
-          `Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`
+          `Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`,
         );
       } else {
         console.log("No new appointments to add for office:", officeName);
@@ -142,29 +141,22 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
       {
         $match: {
           officeName: { $in: [officeName] },
-        },
-      },
-      {
-        $unwind: { path: "$appointments" },
-      },
-      {
-        $match: {
-          "appointments.appointmentDate": {
+          appointmentDate: {
             $gte: new Date(start),
             $lte: new Date(end),
           },
         },
       },
       {
-        $set: {
-          "appointments.officeId": "$_id",
-          "appointments.office": "$officeName",
+        $addFields: {
+          officeId: "$_id",
+          office: "$officeName",
           // Extract month and year from appointment date
-          "appointments.appointmentMonth": {
-            $month: "$appointments.appointmentDate",
+          appointmentMonth: {
+            $month: "$appointmentDate",
           },
-          "appointments.appointmentYear": {
-            $year: "$appointments.appointmentDate",
+          appointmentYear: {
+            $year: "$appointmentDate",
           },
         },
       },
@@ -174,59 +166,49 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
         $lookup: {
           from: "appointments",
           let: {
-            patientId: "$appointments.patientId",
-            insuranceName: "$appointments.insuranceName",
-            appointmentMonth: "$appointments.appointmentMonth",
-            appointmentYear: "$appointments.appointmentYear",
-            currentAppointmentDate: "$appointments.appointmentDate",
-            currentAppointmentId: "$appointments._id",
+            patientId: "$patientId",
+            insuranceName: "$insuranceName",
+            appointmentMonth: "$appointmentMonth",
+            appointmentYear: "$appointmentYear",
+            currentAppointmentDate: "$appointmentDate",
+            currentAppointmentId: "$_id",
             currentOfficeName: "$officeName",
           },
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ["$officeName", "$$currentOfficeName"] },
-              },
-            },
-            { $unwind: "$appointments" },
-            {
-              $match: {
                 $expr: {
                   $and: [
+                    // Same office
+                    { $eq: ["$officeName", "$$currentOfficeName"] },
                     // Same patient
-                    { $eq: ["$appointments.patientId", "$$patientId"] },
+                    { $eq: ["$patientId", "$$patientId"] },
                     // Same insurance
                     {
-                      $eq: ["$appointments.insuranceName", "$$insuranceName"],
+                      $eq: ["$insuranceName", "$$insuranceName"],
                     },
                     // Same month
                     {
                       $eq: [
-                        { $month: "$appointments.appointmentDate" },
+                        { $month: "$appointmentDate" },
                         "$$appointmentMonth",
                       ],
                     },
                     // Same year
                     {
-                      $eq: [
-                        { $year: "$appointments.appointmentDate" },
-                        "$$appointmentYear",
-                      ],
+                      $eq: [{ $year: "$appointmentDate" }, "$$appointmentYear"],
                     },
                     // Completion status is 'Completed'
                     {
-                      $eq: ["$appointments.completionStatus", "Completed"],
+                      $eq: ["$completionStatus", "Completed"],
                     },
                     // Different appointment (not comparing with itself)
                     {
-                      $ne: ["$appointments._id", "$$currentAppointmentId"],
+                      $ne: ["$_id", "$$currentAppointmentId"],
                     },
                     // IMPORTANT: Completed BEFORE or ON the current appointment date
                     {
-                      $lte: [
-                        "$appointments.appointmentDate",
-                        "$$currentAppointmentDate",
-                      ],
+                      $lte: ["$appointmentDate", "$$currentAppointmentDate"],
                     },
                   ],
                 },
@@ -238,8 +220,8 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
         },
       },
       {
-        $set: {
-          "appointments.isPreviouslyCompleted": {
+        $addFields: {
+          isPreviouslyCompleted: {
             $cond: {
               if: { $gt: [{ $size: "$previousCompletions" }, 0] },
               then: true,
@@ -249,7 +231,7 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
         },
       },
       {
-        $replaceRoot: { newRoot: "$appointments" },
+        $unset: "previousCompletions",
       },
       {
         $sort: { appointmentDate: 1, appointmentTime: 1 },
@@ -260,7 +242,7 @@ async function fetchDataForSpecificOffice(officeName, startDate, endDate) {
   } catch (error) {
     console.error(
       "Error at Service Layer in fetchDataForSpecificOffice:",
-      error
+      error,
     );
     throw error;
   }
@@ -273,7 +255,7 @@ async function updateAppointmentInArray(
   status,
   completionStatus,
   ivAssignedDate,
-  ivAssignedByUserName
+  ivAssignedByUserName,
 ) {
   try {
     const result = await AppointmentRepository.updateAppointmentInArray(
@@ -283,34 +265,20 @@ async function updateAppointmentInArray(
       status,
       completionStatus,
       ivAssignedDate,
-      ivAssignedByUserName
+      ivAssignedByUserName,
     );
 
     if (!result.matchedCount) {
       throw new Error("Appointment not found or no matching office");
     }
 
-    // Use findOneAndUpdate with projection to get only the updated appointment in one query
-    const updatedDocument = await Appointment.findOne(
-      {
-        officeName: officeName,
-        "appointments._id": appointmentId,
-      },
-      {
-        "appointments.$": 1, // Project only the matched appointment
-        _id: 0,
-      }
-    );
+    // UPDATED: Get the updated appointment directly (flat structure)
+    const updatedAppointment = await Appointment.findById(appointmentId);
 
-    if (
-      !updatedDocument ||
-      !updatedDocument.appointments ||
-      updatedDocument.appointments.length === 0
-    ) {
+    if (!updatedAppointment) {
       throw new Error("Failed to retrieve updated appointment");
     }
 
-    const updatedAppointment = updatedDocument.appointments[0];
     console.log("Updated Appointment:", updatedAppointment._id);
 
     return updatedAppointment;
@@ -323,6 +291,7 @@ async function updateAppointmentInArray(
 async function createNewRushAppointment(officeName, data) {
   try {
     const newAppointment = {
+      officeName: officeName,
       appointmentDate: new Date(data.appointmentDate),
       appointmentTime: data.appointmentTime,
       provider: data.provider,
@@ -337,16 +306,13 @@ async function createNewRushAppointment(officeName, data) {
       ivRequestedDate: data.ivRequestedDate,
       ivType: "Rush",
       imageUrl: data.imageUrl,
+      source: "Manual", // Mark as manually created
+      status: "Unassigned", // Default status
     };
 
-    const result = await Appointment.updateOne(
-      { officeName: officeName },
-      { $push: { appointments: newAppointment } }
-    );
-    console.log("hhhhh");
-    if (!result.matchedCount) {
-      throw new Error("Office not found");
-    }
+    const result = await Appointment.create(newAppointment);
+
+    console.log("New rush appointment created:", result._id);
     return result;
   } catch (error) {
     console.error("Error at service layer creating new appointment :", error);
@@ -368,94 +334,77 @@ async function fetchUserAppointments(userId, startDate, endDate) {
       endDateObj: endDateObj.toISOString(),
     });
 
-    // Default to ivAssignedDate filtering
-    const dateFieldName = "appointments.ivAssignedDate";
+    // UPDATED: Direct query on flat documents
+    const appointments = await Appointment.find({
+      assignedUser: userId,
+      ivAssignedDate: {
+        $gte: startDateObj,
+        $lte: endDateObj,
+      },
+    })
+      .select({
+        _id: 1,
+        appointmentType: 1,
+        appointmentDate: 1,
+        appointmentTime: 1,
+        patientId: 1,
+        patientName: 1,
+        patientDOB: 1,
+        insuranceName: 1,
+        insurancePhone: 1,
+        policyHolderName: 1,
+        policyHolderDOB: 1,
+        memberId: 1,
+        employerName: 1,
+        groupNumber: 1,
+        relationWithPatient: 1,
+        medicaidId: 1,
+        carrierId: 1,
+        confirmationStatus: 1,
+        cellPhone: 1,
+        homePhone: 1,
+        workPhone: 1,
+        ivType: 1,
+        completionStatus: 1,
+        status: 1,
+        assignedUser: 1,
+        source: 1,
+        planType: 1,
+        ivRemarks: 1,
+        provider: 1,
+        noteRemarks: 1,
+        ivCompletedDate: 1,
+        ivAssignedDate: 1,
+        ivRequestedDate: 1,
+        ivAssignedByUserName: 1,
+        completedBy: 1,
+        officeName: 1,
+      })
+      .sort({ ivAssignedDate: -1 })
+      .lean();
 
-    const appointments = await Appointment.aggregate([
-      { $match: { "appointments.assignedUser": userId } }, // Filter documents where assignedUser matches userId
-      { $unwind: "$appointments" }, // Deconstruct the appointments array
-      {
-        $match: {
-          "appointments.assignedUser": userId,
-          [dateFieldName]: {
-            $gte: startDateObj,
-            $lte: endDateObj,
-          },
-        },
-      }, // Re-filter to ensure only matching appointments are included with full date range
-      { $sort: { [dateFieldName]: -1 } }, // Sort appointments by ivAssignedDate in descending order
-
-      {
-        $group: {
-          _id: "$appointments._id", //Group by appointment id
-          appointment: { $first: "$appointments" }, // Keep the first occurrence of each appointment
-          officeName: { $first: "$officeName" }, // Keep the officeName for reference
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: { $mergeObjects: ["$$ROOT", "$appointment"] },
-        }, // Merge the root document with the appointment document
-      },
-      {
-        $project: {
-          _id: 0, // Exclude the original _id field
-          appointmentType: 1,
-          appointmentDate: 1,
-          appointmentTime: 1,
-          patientId: 1,
-          patientName: 1,
-          patientDOB: 1,
-          insuranceName: 1,
-          insurancePhone: 1,
-          policyHolderName: 1,
-          policyHolderDOB: 1,
-          memberId: 1,
-          employerName: 1,
-          groupNumber: 1,
-          relationWithPatient: 1,
-          medicaidId: 1,
-          carrierId: 1,
-          confirmationStatus: 1,
-          cellPhone: 1,
-          homePhone: 1,
-          workPhone: 1,
-          ivType: 1,
-          completionStatus: 1,
-          status: 1,
-          assignedUser: 1,
-          source: 1,
-          planType: 1,
-          ivRemarks: 1,
-          provider: 1,
-          noteRemarks: 1,
-          ivCompletedDate: 1,
-          ivAssignedDate: 1,
-          ivRequestedDate: 1,
-          ivAssignedByUserName: 1,
-          completedBy: 1,
-          office: "$officeName", // Add officeName as a field named office
-          _id: "$appointment._id", // Use the appointment's _id as the document's _id
-        },
-      },
-    ]);
+    // Map to match expected response format
+    const formattedAppointments = appointments.map((apt) => ({
+      ...apt,
+      office: apt.officeName,
+    }));
 
     console.log(
-      `Found ${appointments.length} appointments for userId: ${userId} with date filters`
+      `Found ${formattedAppointments.length} appointments for userId: ${userId} with date filters`,
     );
 
     // Debug: Log some appointment dates if found
-    if (appointments.length > 0) {
+    if (formattedAppointments.length > 0) {
       console.log(
         "Sample appointment ivAssignedDates:",
-        appointments.slice(0, 3).map((apt) => ({
+        formattedAppointments.slice(0, 3).map((apt) => ({
           id: apt._id,
           ivAssignedDate: apt.ivAssignedDate,
-        }))
+        })),
       );
     }
 
-    return appointments;
+    return formattedAppointments;
   } catch (error) {
     console.error("Error at service layer fetching user appointments:", error);
     throw error;
@@ -469,44 +418,32 @@ async function updateIndividualAppointmentDetails(
   planType,
   completedBy,
   noteRemarks,
-  ivCompletedDate
+  ivCompletedDate,
 ) {
   try {
-    const filter = {
-      "appointments._id": appointmentId,
-    };
-
-    // Define the update operation to modify the specified fields of the targeted appointment
-    // If source is 'Temp', set completionStatus to 'IV Not Done' and completedBy to 'Temp'
+    // UPDATED: Direct update on flat document
     const updateOperation = {
       $set: {
-        "appointments.$[elem].ivRemarks": ivRemarks,
-        "appointments.$[elem].source": source,
-        "appointments.$[elem].planType": planType,
-        "appointments.$[elem].completionStatus":
-          source === "Temp" ? "IV Not Done" : "Completed",
-        "appointments.$[elem].completedBy":
-          source === "Temp" ? "Temp" : completedBy,
-        "appointments.$[elem].noteRemarks": noteRemarks,
-        "appointments.$[elem].ivCompletedDate": ivCompletedDate,
+        ivRemarks: ivRemarks,
+        source: source,
+        planType: planType,
+        completionStatus: source === "Temp" ? "IV Not Done" : "Completed",
+        completedBy: source === "Temp" ? "Temp" : completedBy,
+        noteRemarks: noteRemarks,
+        ivCompletedDate: ivCompletedDate,
+        lastUpdatedAt: new Date(),
       },
     };
 
-    // Specify the arrayFilters option to target the correct appointment within the array
-    const arrayFilters = [
-      {
-        "elem._id": appointmentId,
-      },
-    ];
-
     // Execute the update operation
-    const updateResult = await Appointment.updateOne(filter, updateOperation, {
-      arrayFilters: arrayFilters,
-    });
+    const updateResult = await Appointment.updateOne(
+      { _id: appointmentId },
+      updateOperation,
+    );
 
     if (!updateResult.matchedCount) {
       throw new Error(
-        `No matching appointment found for appointment ID ${appointmentId}`
+        `No matching appointment found for appointment ID ${appointmentId}`,
       );
     }
 
@@ -515,7 +452,7 @@ async function updateIndividualAppointmentDetails(
   } catch (error) {
     console.error(
       "Error at service layer updating individual appointment details:",
-      error
+      error,
     );
     throw error;
   }
@@ -550,7 +487,7 @@ async function bulkUpdateAppointmentDetails(appointmentsData) {
       return results;
     }
 
-    // Process each appointment individually to track success/failure
+    // UPDATED: Process each appointment individually with flat structure
     // Using Promise.allSettled to handle all updates regardless of individual failures
     const updatePromises = validAppointments.map(async (appointmentData) => {
       const {
@@ -568,29 +505,23 @@ async function bulkUpdateAppointmentDetails(appointmentsData) {
 
       try {
         const updateResult = await Appointment.updateOne(
-          {
-            "appointments._id": appointmentId,
-          },
+          { _id: appointmentId },
           {
             $set: {
-              "appointments.$[elem].ivRemarks": ivRemarks,
-              "appointments.$[elem].source": source,
-              "appointments.$[elem].planType": planType,
-              "appointments.$[elem].status": "Assigned",
-              "appointments.$[elem].completionStatus":
-                source === "Temp" ? "IV Not Done" : "Completed",
-              "appointments.$[elem].completedBy":
-                source === "Temp" ? "Temp" : completedBy,
-              "appointments.$[elem].noteRemarks": noteRemarks,
-              "appointments.$[elem].ivCompletedDate": ivCompletedDate,
-              "appointments.$[elem].assignedUser": assignedUser,
-              "appointments.$[elem].ivAssignedByUserName": ivAssignedByUserName,
-              "appointments.$[elem].ivAssignedDate": ivAssignedDate,
+              ivRemarks: ivRemarks,
+              source: source,
+              planType: planType,
+              status: "Assigned",
+              completionStatus: source === "Temp" ? "IV Not Done" : "Completed",
+              completedBy: source === "Temp" ? "Temp" : completedBy,
+              noteRemarks: noteRemarks,
+              ivCompletedDate: ivCompletedDate,
+              assignedUser: assignedUser,
+              ivAssignedByUserName: ivAssignedByUserName,
+              ivAssignedDate: ivAssignedDate,
+              lastUpdatedAt: new Date(),
             },
           },
-          {
-            arrayFilters: [{ "elem._id": appointmentId }],
-          }
         );
 
         return {
@@ -647,7 +578,7 @@ async function bulkUpdateAppointmentDetails(appointmentsData) {
   } catch (error) {
     console.error(
       "Error at service layer in bulk update appointment details:",
-      error
+      error,
     );
     throw error;
   }
@@ -657,7 +588,7 @@ async function getAssignedCountsByOffice(officeName, startDate, endDate) {
   const result = await AppointmentRepository.getAssignedCountsByOffice(
     officeName,
     startDate,
-    endDate
+    endDate,
   );
   return {
     officeName,
@@ -672,7 +603,7 @@ async function getAssignedCountsByOffice(officeName, startDate, endDate) {
 async function fetchUnassignedAppointmentsInRange(
   startDate,
   endDate,
-  dateType = "appointmentDate"
+  dateType = "appointmentDate",
 ) {
   try {
     // Convert startDate and endDate to Date objects
@@ -683,28 +614,26 @@ async function fetchUnassignedAppointmentsInRange(
     endDateDate.setHours(0, 0, 0, 0); // Reset time to 00:00:00.000, which is the start of the next day
     const endDateISO = endDateDate.toISOString(); // Now assign the ISO string to a new constant variable
 
-    // Determine the field name based on dateType
+    // Determine the field name based on dateType (UPDATED for flat structure)
     const dateFieldName =
-      dateType === "ivAssignedDate"
-        ? "appointments.ivAssignedDate"
-        : "appointments.appointmentDate";
+      dateType === "ivAssignedDate" ? "ivAssignedDate" : "appointmentDate";
 
+    // UPDATED: Direct aggregation on flat documents
     const appointments = await Appointment.aggregate([
-      { $unwind: "$appointments" },
       {
         $match: {
           $or: [
             {
-              "appointments.status": "Unassigned",
+              status: "Unassigned",
             },
             {
-              "appointments.completionStatus": "In Process",
+              completionStatus: "In Process",
             },
           ],
-          "appointments.completedBy": { $ne: "Temp" },
+          completedBy: { $ne: "Temp" },
           [dateFieldName]: {
             $gte: new Date(startDateISO),
-            $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
+            $lt: new Date(endDateISO),
           },
         },
       },
@@ -740,7 +669,7 @@ async function fetchUnassignedAppointmentsInRange(
   } catch (error) {
     console.error(
       "Error at service layer fetching unassigned appointments:",
-      error
+      error,
     );
     throw error;
   }
@@ -749,7 +678,7 @@ async function fetchCompletedAppointmentsCountByUser(
   officeName,
   startDate,
   endDate,
-  dateType = "appointmentDate"
+  dateType = "appointmentDate",
 ) {
   try {
     // Convert startDate and endDate to Date objects for comparison
@@ -759,69 +688,32 @@ async function fetchCompletedAppointmentsCountByUser(
     endDateDate.setHours(0, 0, 0, 0); // Reset time to 00:00:00.000, which is the start of the next day
     const endDateISO = endDateDate.toISOString(); // Now assign the ISO string to a new constant variable
 
-    // Determine the field name based on dateType
+    // UPDATED: Determine the field name based on dateType (flat structure)
     const dateFieldName =
-      dateType === "ivCompletedDate"
-        ? "appointments.ivCompletedDate"
-        : "appointments.appointmentDate";
+      dateType === "ivCompletedDate" ? "ivCompletedDate" : "appointmentDate";
 
     console.log("Master data analysis parameters:", {
       officeName,
       startDate,
       endDate,
       dateType,
-      conversionNote:
-        dateType === "ivCompletedDate"
-          ? "Will convert IST to CST in pipeline"
-          : "No conversion needed",
+      conversionNote: "No timezone conversion - filtering as-is",
     });
 
+    // UPDATED: Direct aggregation on flat documents
     const appointments = await Appointment.aggregate([
-      { $match: { officeName: officeName } }, // Filter by officeName to reduce the dataset
-      { $unwind: "$appointments" }, // Flatten the appointments array
-      // Add CST conversion stage if dateType is ivCompletedDate
-      ...(dateType === "ivCompletedDate"
-        ? [
-            {
-              $addFields: {
-                // Convert IST to CST if dateType is ivCompletedDate
-                convertedDate: {
-                  $cond: [
-                    { $ne: ["$appointments.ivCompletedDate", null] },
-                    {
-                      $dateAdd: {
-                        startDate: "$appointments.ivCompletedDate",
-                        unit: "minute",
-                        amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
-                      },
-                    },
-                    null,
-                  ],
-                },
-              },
-            },
-          ]
-        : []),
       {
         $match: {
-          "appointments.completionStatus": "Completed",
-          "appointments.source": { $ne: "Temp" }, // Exclude appointments with source as 'Temp'
-          ...(dateType === "ivCompletedDate"
-            ? {
-                convertedDate: {
-                  $gte: new Date(startDateISO),
-                  $lt: new Date(endDateISO),
-                },
-              }
-            : {
-                [dateFieldName]: {
-                  $gte: new Date(startDateISO),
-                  $lt: new Date(endDateISO), // Use $lt to exclude the start of the next day, effectively including the end date up to 23:59:59.999
-                },
-              }),
+          officeName: officeName,
+          completionStatus: "Completed",
+          source: { $ne: "Temp" },
+          [dateFieldName]: {
+            $gte: new Date(startDateISO),
+            $lt: new Date(endDateISO),
+          },
         },
-      }, // Filter for completed appointments
-      { $group: { _id: "$appointments.assignedUser", count: { $sum: 1 } } }, // Group by assignedUser and count
+      },
+      { $group: { _id: "$assignedUser", count: { $sum: 1 } } },
     ]);
 
     console.log("Aggregation Result:", appointments);
@@ -833,7 +725,6 @@ async function fetchCompletedAppointmentsCountByUser(
 
     const completedCount = appointments.map((appointment) => ({
       userId: appointment._id,
-
       count: appointment.count,
     }));
 
@@ -841,7 +732,7 @@ async function fetchCompletedAppointmentsCountByUser(
   } catch (error) {
     console.error(
       "Error at service layer fetching completed appointments:",
-      error
+      error,
     );
     throw error;
   }
@@ -851,7 +742,7 @@ async function getAppointmentsByOfficeAndRemarks(
   officeName,
   startDate,
   endDate,
-  remarks
+  remarks,
 ) {
   try {
     const appointments =
@@ -859,13 +750,13 @@ async function getAppointmentsByOfficeAndRemarks(
         officeName,
         startDate,
         endDate,
-        remarks
+        remarks,
       );
     return appointments;
   } catch (error) {
     console.error(
       "Error at service layer in getAppointmentsByOfficeAndRemarks:",
-      error
+      error,
     );
     throw error;
   }
@@ -875,13 +766,13 @@ async function getAppointmentCompletionAnalysis(
   startDate,
   endDate,
   dateType = "appointmentDate",
-  ivType = "Normal"
+  ivType = "Normal",
 ) {
   try {
     // Validate dateType
     if (!["appointmentDate", "ivCompletedDate"].includes(dateType)) {
       throw new Error(
-        "Invalid dateType. Must be 'appointmentDate' or 'ivCompletedDate'"
+        "Invalid dateType. Must be 'appointmentDate' or 'ivCompletedDate'",
       );
     }
 
@@ -914,7 +805,7 @@ async function getAppointmentCompletionAnalysis(
         startDate,
         endDate,
         dateType,
-        ivType
+        ivType,
       );
 
     return {
@@ -929,7 +820,7 @@ async function getAppointmentCompletionAnalysis(
   } catch (error) {
     console.error(
       "Error at service layer in appointment completion analysis:",
-      error
+      error,
     );
     throw error;
   }
@@ -937,9 +828,8 @@ async function getAppointmentCompletionAnalysis(
 
 async function debugAppointmentData(officeName) {
   try {
-    const debugData = await AppointmentRepository.debugAppointmentData(
-      officeName
-    );
+    const debugData =
+      await AppointmentRepository.debugAppointmentData(officeName);
     return debugData;
   } catch (error) {
     console.error("Error at service layer in debug appointment data:", error);
@@ -977,7 +867,7 @@ async function getDynamicUnassignedAppointments() {
   } catch (error) {
     console.error(
       "Error at service layer in getDynamicUnassignedAppointments:",
-      error
+      error,
     );
     throw error;
   }
@@ -988,19 +878,20 @@ async function checkAppointmentCompletionStatus(appointmentIds) {
   try {
     console.log(
       "Service: Checking completion status for appointments:",
-      appointmentIds
+      appointmentIds,
     );
 
-    const result = await AppointmentRepository.checkAppointmentCompletionStatus(
-      appointmentIds
-    );
+    const result =
+      await AppointmentRepository.checkAppointmentCompletionStatus(
+        appointmentIds,
+      );
 
     // Separate completed and not completed appointments
     const completedAppointments = result.filter(
-      (appointment) => appointment.completionStatus === "Completed"
+      (appointment) => appointment.completionStatus === "Completed",
     );
     const notCompletedAppointments = result.filter(
-      (appointment) => appointment.completionStatus !== "Completed"
+      (appointment) => appointment.completionStatus !== "Completed",
     );
 
     // Create detailed response
@@ -1050,7 +941,7 @@ async function checkAppointmentCompletionStatus(appointmentIds) {
   } catch (error) {
     console.error(
       "Error at service layer in checkAppointmentCompletionStatus:",
-      error
+      error,
     );
     throw error;
   }

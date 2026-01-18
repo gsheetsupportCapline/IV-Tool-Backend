@@ -1,26 +1,26 @@
-const OfficeDataRepository = require('../repository/officeData-repository');
+const OfficeDataRepository = require("../repository/officeData-repository");
 
 const OfficeDataService = {
   getOfficeDataByDateRange: async (fromDate, toDate, dateType) => {
     try {
       // Map dateType to actual field names in database
       const dateFieldMapping = {
-        appointmentDate: 'appointments.appointmentDate',
-        completedDate: 'appointments.ivCompletedDate',
-        ivRequestedDate: 'appointments.ivRequestedDate',
-        ivAssignedDate: 'appointments.ivAssignedDate',
+        appointmentDate: "appointmentDate",
+        completedDate: "ivCompletedDate",
+        ivRequestedDate: "ivRequestedDate",
+        ivAssignedDate: "ivAssignedDate",
       };
 
       const dateFieldName = dateFieldMapping[dateType];
       if (!dateFieldName) {
-        throw new Error('Invalid dateType provided');
+        throw new Error("Invalid dateType provided");
       }
 
       // Get data from repository
       const officeData = await OfficeDataRepository.getOfficeDataByDateRange(
         fromDate,
         toDate,
-        dateFieldName
+        dateFieldName,
       );
 
       // Process and format the data
@@ -72,8 +72,8 @@ const OfficeDataService = {
       };
     } catch (error) {
       console.error(
-        'Error at OfficeDataService.getOfficeDataByDateRange:',
-        error
+        "Error at OfficeDataService.getOfficeDataByDateRange:",
+        error,
       );
       throw error;
     }
