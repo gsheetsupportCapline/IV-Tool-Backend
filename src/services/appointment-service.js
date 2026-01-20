@@ -100,7 +100,7 @@ async function processOfficeAppointments(officeName) {
         workPhone: appointmentData.c19,
         patientDOB: appointmentData.c20,
         ivRequestedDate: texasTime,
-        source: "GoogleSheets", // Mark source
+        source: "", // Mark source
         status: "Unassigned", // Default status
       };
     });
