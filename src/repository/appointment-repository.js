@@ -297,10 +297,7 @@ async function getAppointmentCompletionAnalysis(
       ivType,
       startDateObj: startDateObj.toISOString(),
       endDateObj: endDateObj.toISOString(),
-      conversionNote:
-        dateType === "ivCompletedDate"
-          ? "Will convert IST to CST in pipeline"
-          : "No conversion needed",
+      note: "All dates are already stored in CST, no conversion needed",
     });
 
     // Determine the field name based on dateType
@@ -359,77 +356,30 @@ async function getAppointmentCompletionAnalysis(
         },
         {
           $addFields: {
-            // Convert IST to CST if dateType is ivCompletedDate
+            // Parse date for filtering - data is already in CST
             convertedDate:
               dateType === "ivCompletedDate"
                 ? {
                     $cond: [
                       { $ne: ["$ivCompletedDate", null] },
                       {
-                        $dateAdd: {
-                          startDate: "$ivCompletedDate",
-                          unit: "minute",
-                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes (IST is UTC+5:30, CST is UTC-6)
-                        },
+                        $cond: [
+                          {
+                            $eq: [{ $type: "$ivCompletedDate" }, "date"],
+                          },
+                          "$ivCompletedDate",
+                          {
+                            $dateFromString: {
+                              dateString: "$ivCompletedDate",
+                              onError: null,
+                            },
+                          },
+                        ],
                       },
                       null,
                     ],
                   }
                 : "$appointmentDate",
-            // Convert ivRequestedDate IST to CST
-            requestedDateTime: {
-              $cond: [
-                { $ne: ["$ivRequestedDate", null] },
-                {
-                  $dateAdd: {
-                    startDate: {
-                      $cond: [
-                        {
-                          $eq: [{ $type: "$ivRequestedDate" }, "date"],
-                        },
-                        "$ivRequestedDate",
-                        {
-                          $dateFromString: {
-                            dateString: "$ivRequestedDate",
-                            onError: null,
-                          },
-                        },
-                      ],
-                    },
-                    unit: "minute",
-                    amount: -690,
-                  },
-                },
-                null,
-              ],
-            },
-            // Convert ivCompletedDate IST to CST
-            completedDateTime: {
-              $cond: [
-                { $ne: ["$ivCompletedDate", null] },
-                {
-                  $dateAdd: {
-                    startDate: {
-                      $cond: [
-                        {
-                          $eq: [{ $type: "$ivCompletedDate" }, "date"],
-                        },
-                        "$ivCompletedDate",
-                        {
-                          $dateFromString: {
-                            dateString: "$ivCompletedDate",
-                            onError: null,
-                          },
-                        },
-                      ],
-                    },
-                    unit: "minute",
-                    amount: -690,
-                  },
-                },
-                null,
-              ],
-            },
           },
         },
         {
@@ -460,11 +410,9 @@ async function getAppointmentCompletionAnalysis(
                 insuranceName: "$insuranceName",
                 appointmentDate: "$appointmentDate",
                 appointmentTime: "$appointmentTime",
-                ivRequestedDateIST: "$ivRequestedDate",
-                ivRequestedDateTimeCST: "$requestedDateTime",
-                ivCompletedDateIST: "$ivCompletedDate",
-                ivCompletedDateTimeCST: "$completedDateTime",
+                ivRequestedDate: "$ivRequestedDate",
                 ivAssignedDate: "$ivAssignedDate",
+                ivCompletedDate: "$ivCompletedDate",
               },
             },
           },
@@ -497,18 +445,25 @@ async function getAppointmentCompletionAnalysis(
         },
         {
           $addFields: {
-            // Convert IST to CST if dateType is ivCompletedDate
+            // Parse date for filtering - data is already in CST
             convertedDate:
               dateType === "ivCompletedDate"
                 ? {
                     $cond: [
                       { $ne: ["$ivCompletedDate", null] },
                       {
-                        $dateAdd: {
-                          startDate: "$ivCompletedDate",
-                          unit: "minute",
-                          amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
-                        },
+                        $cond: [
+                          {
+                            $eq: [{ $type: "$ivCompletedDate" }, "date"],
+                          },
+                          "$ivCompletedDate",
+                          {
+                            $dateFromString: {
+                              dateString: "$ivCompletedDate",
+                              onError: null,
+                            },
+                          },
+                        ],
                       },
                       null,
                     ],
@@ -937,56 +892,44 @@ async function getAppointmentCompletionAnalysis(
                 "$appointmentDate",
               ],
             },
-            // Convert ivCompletedDate from IST to CST
+            // Parse ivCompletedDate if it's a string
             completedDateTime: {
               $cond: [
                 { $ne: ["$ivCompletedDate", null] },
                 {
-                  $dateAdd: {
-                    startDate: {
-                      $cond: [
-                        {
-                          $eq: [{ $type: "$ivCompletedDate" }, "date"],
-                        },
-                        "$ivCompletedDate",
-                        {
-                          $dateFromString: {
-                            dateString: "$ivCompletedDate",
-                            onError: null,
-                          },
-                        },
-                      ],
+                  $cond: [
+                    {
+                      $eq: [{ $type: "$ivCompletedDate" }, "date"],
                     },
-                    unit: "minute",
-                    amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
-                  },
+                    "$ivCompletedDate",
+                    {
+                      $dateFromString: {
+                        dateString: "$ivCompletedDate",
+                        onError: null,
+                      },
+                    },
+                  ],
                 },
                 null,
               ],
             },
-            // Convert ivRequestedDate from IST to CST
+            // Parse ivRequestedDate if it's a string
             requestedDateTime: {
               $cond: [
                 { $ne: ["$ivRequestedDate", null] },
                 {
-                  $dateAdd: {
-                    startDate: {
-                      $cond: [
-                        {
-                          $eq: [{ $type: "$ivRequestedDate" }, "date"],
-                        },
-                        "$ivRequestedDate",
-                        {
-                          $dateFromString: {
-                            dateString: "$ivRequestedDate",
-                            onError: null,
-                          },
-                        },
-                      ],
+                  $cond: [
+                    {
+                      $eq: [{ $type: "$ivRequestedDate" }, "date"],
                     },
-                    unit: "minute",
-                    amount: -690, // IST to CST: subtract 11.5 hours = 690 minutes
-                  },
+                    "$ivRequestedDate",
+                    {
+                      $dateFromString: {
+                        dateString: "$ivRequestedDate",
+                        onError: null,
+                      },
+                    },
+                  ],
                 },
                 null,
               ],
@@ -1010,6 +953,7 @@ async function getAppointmentCompletionAnalysis(
           $addFields: {
             // For Rush IV: If requested within 1 hour before appointment, add 1 hour buffer to requested time
             // Otherwise, use appointment time as the threshold
+            // Data is already in CST, no conversion needed
             effectiveThresholdTime: {
               $cond: [
                 {
@@ -1017,7 +961,7 @@ async function getAppointmentCompletionAnalysis(
                     { $eq: ["$ivType", "Rush"] },
                     { $ne: ["$requestedDateTime", null] },
                     { $ne: ["$appointmentDateTime", null] },
-                    { $lt: ["$requestedDateTime", "$appointmentDateTime"] }, // Requested before appointment
+                    { $lt: ["$requestedDateTime", "$appointmentDateTime"] }, // Requested before appointment (CST to CST)
                     {
                       $lte: [
                         {
@@ -1050,8 +994,9 @@ async function getAppointmentCompletionAnalysis(
             completedDateTime: { $ne: null },
             requestedDateTime: { $ne: null },
             appointmentDateTime: { $ne: null },
-            // Filter: Only include IVs requested BEFORE appointment time (CST comparison)
-            // requestedDateTime (CST) < appointmentDateTime (CST)
+            // Filter: Only include IVs requested BEFORE appointment time
+            // All dates are already in CST, direct comparison
+            // requestedDateTime < appointmentDateTime
             // Means: IV was requested BEFORE the appointment time
             $expr: {
               $lt: ["$requestedDateTime", "$appointmentDateTime"],
@@ -1104,12 +1049,9 @@ async function getAppointmentCompletionAnalysis(
                 insuranceName: "$insuranceName",
                 appointmentDate: "$appointmentDate",
                 appointmentTime: "$appointmentTime",
-                appointmentDateTimeCST: "$appointmentDateTime",
-                ivRequestedDateIST: "$ivRequestedDate",
-                ivRequestedDateTimeCST: "$requestedDateTime",
-                ivCompletedDateIST: "$ivCompletedDate",
-                ivCompletedDateTimeCST: "$completedDateTime",
+                ivRequestedDate: "$ivRequestedDate",
                 ivAssignedDate: "$ivAssignedDate",
+                ivCompletedDate: "$ivCompletedDate",
               },
             },
             // Completed AFTER appointment time data
@@ -1123,12 +1065,9 @@ async function getAppointmentCompletionAnalysis(
                     insuranceName: "$insuranceName",
                     appointmentDate: "$appointmentDate",
                     appointmentTime: "$appointmentTime",
-                    appointmentDateTimeCST: "$appointmentDateTime",
-                    ivRequestedDateIST: "$ivRequestedDate",
-                    ivRequestedDateTimeCST: "$requestedDateTime",
-                    ivCompletedDateIST: "$ivCompletedDate",
-                    ivCompletedDateTimeCST: "$completedDateTime",
+                    ivRequestedDate: "$ivRequestedDate",
                     ivAssignedDate: "$ivAssignedDate",
+                    ivCompletedDate: "$ivCompletedDate",
                   },
                   "$$REMOVE",
                 ],
@@ -1145,12 +1084,9 @@ async function getAppointmentCompletionAnalysis(
                     insuranceName: "$insuranceName",
                     appointmentDate: "$appointmentDate",
                     appointmentTime: "$appointmentTime",
-                    appointmentDateTimeCST: "$appointmentDateTime",
-                    ivRequestedDateIST: "$ivRequestedDate",
-                    ivRequestedDateTimeCST: "$requestedDateTime",
-                    ivCompletedDateIST: "$ivCompletedDate",
-                    ivCompletedDateTimeCST: "$completedDateTime",
+                    ivRequestedDate: "$ivRequestedDate",
                     ivAssignedDate: "$ivAssignedDate",
+                    ivCompletedDate: "$ivCompletedDate",
                   },
                   "$$REMOVE",
                 ],
