@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const AppointmentRepository = require("../repository/appointment-repository");
 const Appointment = require("../models/appointment");
+const ArchivedAppointment = require("../models/archivedAppointment");
+const FetchLog = require("../models/fetchLog");
 const DropdownValuesRepository = require("../repository/dropdownValues-repository");
 
 async function fetchDataAndStoreAppointments() {
@@ -28,31 +30,119 @@ async function fetchDataAndStoreAppointments() {
     const officeNames = officeDropdown.options.map((option) => option.name);
     console.log("Fetched office names from database:", officeNames);
 
+    console.log(
+      `\n[PARALLEL] Starting parallel processing for ${officeNames.length} offices...`,
+    );
+
+    // Process all offices in parallel using Promise.allSettled
+    // This ensures that if one office fails, others continue
+    const processPromises = officeNames.map((officeName) =>
+      processOfficeAppointments(officeName),
+    );
+
+    const settledResults = await Promise.allSettled(processPromises);
+
+    // Extract results and calculate totals
     const results = [];
     let totalFetched = 0;
     let totalNewAdded = 0;
+    let totalArchived = 0;
+    let successCount = 0;
+    let errorCount = 0;
 
-    for (const officeName of officeNames) {
-      const result = await processOfficeAppointments(officeName);
-      results.push(result);
-      totalFetched += result.fetchedCount;
-      totalNewAdded += result.newCount;
-    }
+    settledResults.forEach((settled, index) => {
+      if (settled.status === "fulfilled") {
+        const result = settled.value;
+        results.push(result);
+        totalFetched += result.fetchedCount || 0;
+        totalNewAdded += result.newCount || 0;
+        totalArchived += result.archivedCount || 0;
+        // Count as success only if status is 'success', not 'failed' or 'error'
+        if (result.status === "success") successCount++;
+        else errorCount++;
+      } else {
+        // Handle rejected promise
+        const officeName = officeNames[index];
+        console.error(
+          `[PARALLEL ERROR] Office ${officeName} processing failed:`,
+          settled.reason,
+        );
+        results.push({
+          officeName: officeName,
+          fetchedCount: 0,
+          newCount: 0,
+          archivedCount: 0,
+          status: "error",
+          error: settled.reason?.message || "Unknown error",
+        });
+        errorCount++;
+      }
+    });
+
+    console.log(`\n[PARALLEL] Completed processing all offices`);
+    console.log(`[PARALLEL] Success: ${successCount}, Errors: ${errorCount}`);
 
     const summary = {
       success: true,
       timestamp: new Date(),
       totalOffices: officeNames.length,
+      successfulOffices: successCount,
+      failedOffices: errorCount,
       totalFetched: totalFetched,
       totalNewAdded: totalNewAdded,
+      totalArchived: totalArchived,
       officeDetails: results,
     };
 
     console.log("\n=== Fetch Summary ===");
     console.log(`Total Offices Processed: ${summary.totalOffices}`);
+    console.log(
+      `Successful: ${summary.successfulOffices}, Failed: ${summary.failedOffices}`,
+    );
     console.log(`Total Appointments Fetched: ${summary.totalFetched}`);
     console.log(`Total New Appointments Added: ${summary.totalNewAdded}`);
+    console.log(`Total Fresh Appointments Archived: ${summary.totalArchived}`);
     console.log("=====================\n");
+
+    // Save fetch log to database
+    try {
+      console.log("[LOG] Saving fetch log to database...");
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of day for date matching
+
+      const fetchOperation = {
+        timestamp: summary.timestamp,
+        totalOffices: summary.totalOffices,
+        successfulOffices: summary.successfulOffices,
+        failedOffices: summary.failedOffices,
+        totalFetched: summary.totalFetched,
+        totalNewAdded: summary.totalNewAdded,
+        totalArchived: summary.totalArchived,
+        officeDetails: results,
+        executionType: "manual", // Default to manual, cron will override
+      };
+
+      // Find or create log document for today
+      const logDoc = await FetchLog.findOne({ date: today });
+
+      if (logDoc) {
+        // Append to existing document
+        logDoc.fetchOperations.push(fetchOperation);
+        await logDoc.save();
+        console.log("[LOG] Appended to existing log document");
+      } else {
+        // Create new document for today
+        await FetchLog.create({
+          date: today,
+          fetchOperations: [fetchOperation],
+        });
+        console.log("[LOG] Created new log document for today");
+      }
+    } catch (logError) {
+      console.error("[LOG ERROR] Failed to save fetch log:", logError.message);
+      // Don't throw, just log the error
+    }
 
     return summary;
   } catch (error) {
@@ -64,13 +154,63 @@ async function fetchDataAndStoreAppointments() {
 
 async function processOfficeAppointments(officeName) {
   try {
+    console.log(`\n[START] Processing office: ${officeName}`);
+
     const response = await AppointmentRepository.fetchDataByOffice(officeName);
-    // console.log(response);
+    console.log(`[FETCH] Received response for: ${officeName}`, {
+      hasResponse: !!response,
+      hasData: !!response?.data,
+      dataLength: response?.data?.length ?? 0,
+    });
+
+    // Handle case where response or data is missing
+    if (!response || !response.data) {
+      console.log(`[FAILED] No data received for office: ${officeName}`);
+      return {
+        officeName: officeName,
+        fetchedCount: 0,
+        newCount: 0,
+        archivedCount: 0,
+        status: "failed",
+        message: "No data received from source",
+        newAppointmentsData: [],
+        archivedAppointmentsData: [],
+      };
+    }
+
     const appointmentsData = response.data;
+
+    // If empty array, log and skip processing
+    if (!Array.isArray(appointmentsData) || appointmentsData.length === 0) {
+      console.log(
+        `[FAILED] No appointments fetched for office: ${officeName} - Skipping processing`,
+      );
+      return {
+        officeName: officeName,
+        fetchedCount: 0,
+        newCount: 0,
+        archivedCount: 0,
+        status: "failed",
+        message:
+          "No appointments in date range or ES Agent is not working for this office",
+        newAppointmentsData: [],
+        archivedAppointmentsData: [],
+      };
+    }
 
     // Get current date/time in America/Chicago timezone (Texas)
     // This automatically handles CST (UTC-6) and CDT (UTC-5) with Daylight Saving Time
     const texasTime = moment.tz("America/Chicago").toDate();
+
+    // Calculate the date range for fetched data (same as fetchDataByOffice)
+    const currentDate = new Date();
+    const twoMonthsAgo = new Date(currentDate);
+    twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
+    twoMonthsAgo.setHours(0, 0, 0, 0); // Start of day
+
+    const futureDate = new Date(currentDate);
+    futureDate.setDate(currentDate.getDate() + 15);
+    futureDate.setHours(23, 59, 59, 999); // End of day
 
     const newAppointments = appointmentsData.map((appointmentData) => {
       const dateTimeString = appointmentData.c5.split(" ");
@@ -105,15 +245,39 @@ async function processOfficeAppointments(officeName) {
       };
     });
 
-    // Find existing appointments for this office to check for duplicates
-    const existingAppointments = await Appointment.find({
-      officeName: officeName,
-    })
-      .select("patientId appointmentDate insuranceName")
-      .lean();
+    console.log(
+      `[MAP] Mapped ${newAppointments.length} appointments for: ${officeName}`,
+    );
+
+    // Find existing appointments for this office within the date range to check for duplicates and archiving
+    let existingAppointments = [];
+    try {
+      console.log(
+        `[DB] Querying database for existing appointments: ${officeName}`,
+      );
+      existingAppointments = await Appointment.find({
+        officeName: officeName,
+        appointmentDate: {
+          $gte: twoMonthsAgo,
+          $lte: futureDate,
+        },
+      }).lean();
+      console.log(
+        `[DB] Found ${existingAppointments.length} existing appointments for: ${officeName}`,
+      );
+    } catch (dbError) {
+      console.error(
+        `[DB ERROR] Failed to query database for office: ${officeName}`,
+        dbError.message,
+      );
+      // Continue processing even if DB query fails
+      existingAppointments = [];
+    }
 
     let appointmentsToAdd = [];
+    let appointmentsToArchive = [];
 
+    // Check which new appointments are duplicates
     newAppointments.forEach((newAppointment) => {
       const isDuplicate = existingAppointments.some((existingAppointment) => {
         // Convert both dates to Date objects
@@ -134,31 +298,144 @@ async function processOfficeAppointments(officeName) {
       }
     });
 
-    if (appointmentsToAdd.length > 0) {
-      // Insert new appointments as flat documents
-      await Appointment.insertMany(appointmentsToAdd);
-      console.log(
-        `Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`,
-      );
+    // Archive existing appointments that are NOT in the fetched data
+    // IMPORTANT: Only archive if at least 1 entry was fetched (server is responding)
+    // If 0 entries fetched, server might be down - don't archive anything
+    // Only archive appointments within the date range (2 months ago to 15 days future)
+    // Only archive if they are fresh (status: "Unassigned" and completionStatus: "IV Not Done")
+    if (newAppointments.length > 0) {
+      existingAppointments.forEach((existingAppointment) => {
+        const isInFetchedData = newAppointments.some((newAppointment) => {
+          const existingDate = new Date(existingAppointment.appointmentDate);
+          const newDate = new Date(newAppointment.appointmentDate);
+
+          return (
+            existingAppointment.patientId == newAppointment.patientId &&
+            existingDate.getDate() == newDate.getDate() &&
+            existingDate.getMonth() == newDate.getMonth() &&
+            existingDate.getFullYear() == newDate.getFullYear() &&
+            existingAppointment.insuranceName == newAppointment.insuranceName
+          );
+        });
+
+        // Archive if:
+        // 1. Not found in fetched data
+        // 2. Status is "Unassigned"
+        // 3. Completion status is "IV Not Done"
+        if (
+          !isInFetchedData &&
+          existingAppointment.status === "Unassigned" &&
+          existingAppointment.completionStatus === "IV Not Done"
+        ) {
+          appointmentsToArchive.push(existingAppointment);
+        }
+      });
     } else {
-      console.log("No new appointments to add for office:", officeName);
+      console.log(
+        `No entries fetched for office: ${officeName} - Skipping archiving (server might be down)`,
+      );
     }
+
+    // Perform archiving
+    if (appointmentsToArchive.length > 0) {
+      try {
+        console.log(`[ARCHIVE] Starting archiving for office: ${officeName}`);
+        const archiveData = appointmentsToArchive.map((appt) => ({
+          ...appt,
+          originalId: appt._id,
+          archivedAt: new Date(),
+          archivedReason: "Not found in fetched data (fresh entry)",
+        }));
+
+        // Insert into archived collection
+        await ArchivedAppointment.insertMany(archiveData);
+        console.log(
+          `[ARCHIVE] Inserted ${archiveData.length} into archived collection`,
+        );
+
+        // Remove from active appointments
+        const idsToRemove = appointmentsToArchive.map((appt) => appt._id);
+        await Appointment.deleteMany({ _id: { $in: idsToRemove } });
+
+        console.log(
+          `[ARCHIVE] Archived ${appointmentsToArchive.length} fresh appointment(s) for office: ${officeName}`,
+        );
+      } catch (archiveError) {
+        console.error(
+          `[ARCHIVE ERROR] Failed to archive appointments for office: ${officeName}`,
+          archiveError.message,
+        );
+        // Continue processing even if archiving fails
+      }
+    }
+
+    if (appointmentsToAdd.length > 0) {
+      try {
+        console.log(`[INSERT] Starting insertion for office: ${officeName}`);
+        // Insert new appointments as flat documents
+        await Appointment.insertMany(appointmentsToAdd);
+        console.log(
+          `[INSERT] Added ${appointmentsToAdd.length} new appointment(s) for office: ${officeName}`,
+        );
+      } catch (insertError) {
+        console.error(
+          `[INSERT ERROR] Failed to insert appointments for office: ${officeName}`,
+          insertError.message,
+        );
+        // Continue processing even if insertion fails
+      }
+    } else {
+      console.log(
+        `[SKIP] No new appointments to add for office: ${officeName}`,
+      );
+    }
+
+    console.log(`[COMPLETE] Finished processing office: ${officeName}\n`);
+
+    // Prepare minimal data for response and logging
+    const newAppointmentsData = appointmentsToAdd.map((appt) => ({
+      patientId: appt.patientId,
+      patientName: appt.patientName,
+      appointmentDate: appt.appointmentDate,
+      appointmentTime: appt.appointmentTime,
+      insuranceName: appt.insuranceName,
+      appointmentType: appt.appointmentType,
+    }));
+
+    const archivedAppointmentsData = appointmentsToArchive.map((appt) => ({
+      patientId: appt.patientId,
+      patientName: appt.patientName,
+      appointmentDate: appt.appointmentDate,
+      appointmentTime: appt.appointmentTime,
+      insuranceName: appt.insuranceName,
+      appointmentType: appt.appointmentType,
+      archivedReason: "Not found in fetched data (fresh entry)",
+    }));
 
     return {
       officeName: officeName,
       fetchedCount: newAppointments.length,
       newCount: appointmentsToAdd.length,
+      archivedCount: appointmentsToArchive.length,
       status: "success",
+      newAppointmentsData: newAppointmentsData,
+      archivedAppointmentsData: archivedAppointmentsData,
     };
   } catch (error) {
-    console.log("Error processing office appointments for:", officeName);
-    console.error("Error:", error);
+    console.error(
+      `[ERROR] Error processing office appointments for: ${officeName}`,
+    );
+    console.error(`[ERROR] Error message:`, error.message);
+    console.error(`[ERROR] Error stack:`, error.stack);
     return {
       officeName: officeName,
       fetchedCount: 0,
       newCount: 0,
+      archivedCount: 0,
       status: "error",
       error: error.message,
+      newAppointmentsData: [],
+      archivedAppointmentsData: [],
     };
   }
 }

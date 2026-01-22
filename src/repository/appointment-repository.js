@@ -30,6 +30,8 @@ async function fetchDataByOffice(officeName) {
     console.log("Start Date ", startDate);
     console.log("End Date ", endDate);
 
+    console.log(`[AXIOS] Starting API call for office: ${officeName}`);
+
     const response = await axios.get(ES_URL, {
       params: {
         office: officeName,
@@ -41,21 +43,47 @@ async function fetchDataByOffice(officeName) {
           "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date",
         columnCount: "20",
       },
+      timeout: 60000, // 60 seconds timeout
     });
+
+    console.log(`[AXIOS] Received response for office: ${officeName}`);
 
     // console.log("Full query:", response.config.url);
     // console.log("Query parameters:", response.config.params);
 
     console.log("fetching response");
+
+    // Safely access data length with fallback
+    const dataLength = response?.data?.data?.length ?? 0;
     console.log(
-      `Number of objects returned for office "${officeName}": ${response.data.data.length}`,
+      `Number of objects returned for office "${officeName}": ${dataLength}`,
     );
-    return response.data;
+
+    // Return standardized response structure
+    return response.data || { data: [] };
   } catch (error) {
     console.error(
-      `Error fetchDataByOffice - fetching data for ${officeName} at Repository Layer`,
+      `[AXIOS ERROR] Error fetchDataByOffice - fetching data for ${officeName} at Repository Layer`,
     );
-    throw error;
+
+    if (error.code === "ECONNABORTED") {
+      console.error(
+        `[TIMEOUT] Request timeout after 60 seconds for office: ${officeName}`,
+      );
+    } else if (error.response) {
+      console.error(
+        `[HTTP ERROR] Status: ${error.response.status}, Message: ${error.message}`,
+      );
+    } else if (error.request) {
+      console.error(
+        `[NO RESPONSE] No response received from server for office: ${officeName}`,
+      );
+    } else {
+      console.error(`[ERROR] ${error.message}`);
+    }
+
+    // Return empty data instead of throwing, so processing can continue
+    return { data: [] };
   }
 }
 
