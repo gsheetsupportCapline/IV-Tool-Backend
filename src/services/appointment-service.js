@@ -7,7 +7,7 @@ const ArchivedAppointment = require("../models/archivedAppointment");
 const FetchLog = require("../models/fetchLog");
 const DropdownValuesRepository = require("../repository/dropdownValues-repository");
 
-async function fetchDataAndStoreAppointments() {
+async function fetchDataAndStoreAppointments(executionType = "manual") {
   try {
     // Fetch office names dynamically from dropdownValues collection
     const officeDropdown =
@@ -82,9 +82,12 @@ async function fetchDataAndStoreAppointments() {
     console.log(`\n[PARALLEL] Completed processing all offices`);
     console.log(`[PARALLEL] Success: ${successCount}, Errors: ${errorCount}`);
 
+    // Get current time in CST timezone formatted as string
+    const cstTime = moment.tz("America/Chicago").format();
+
     const summary = {
       success: true,
-      timestamp: new Date(),
+      timestamp: cstTime,
       totalOffices: officeNames.length,
       successfulOffices: successCount,
       failedOffices: errorCount,
@@ -108,8 +111,8 @@ async function fetchDataAndStoreAppointments() {
     try {
       console.log("[LOG] Saving fetch log to database...");
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Start of day for date matching
+      // Get today's date in CST timezone (same as ivCompletedDate)
+      const todayCST = moment.tz("America/Chicago").startOf("day").toDate();
 
       const fetchOperation = {
         timestamp: summary.timestamp,
@@ -120,11 +123,11 @@ async function fetchDataAndStoreAppointments() {
         totalNewAdded: summary.totalNewAdded,
         totalArchived: summary.totalArchived,
         officeDetails: results,
-        executionType: "manual", // Default to manual, cron will override
+        executionType: executionType, // Use the parameter passed to function
       };
 
-      // Find or create log document for today
-      const logDoc = await FetchLog.findOne({ date: today });
+      // Find or create log document for today (using CST timezone date)
+      const logDoc = await FetchLog.findOne({ date: todayCST });
 
       if (logDoc) {
         // Append to existing document
@@ -134,7 +137,7 @@ async function fetchDataAndStoreAppointments() {
       } else {
         // Create new document for today
         await FetchLog.create({
-          date: today,
+          date: todayCST,
           fetchOperations: [fetchOperation],
         });
         console.log("[LOG] Created new log document for today");
@@ -599,9 +602,46 @@ async function updateAppointmentInArray(
 
 async function createNewRushAppointment(officeName, data) {
   try {
+    // Check for duplicate appointment before creating
+    const appointmentDateObj = new Date(data.appointmentDate);
+
+    console.log("[CREATE APPOINTMENT] Checking for duplicates with criteria:", {
+      officeName,
+      appointmentDate: appointmentDateObj,
+      appointmentTime: data.appointmentTime,
+      patientId: data.patientId,
+      insuranceName: data.insuranceName,
+      status: "Unassigned",
+      completionStatus: "IV Not Done",
+    });
+
+    const existingAppointment = await Appointment.findOne({
+      officeName: officeName,
+      appointmentDate: appointmentDateObj,
+      appointmentTime: data.appointmentTime,
+      patientId: data.patientId,
+      insuranceName: data.insuranceName,
+      status: "Unassigned",
+      completionStatus: "IV Not Done",
+    });
+
+    if (existingAppointment) {
+      console.log(
+        "[CREATE APPOINTMENT] Duplicate appointment found:",
+        existingAppointment._id,
+      );
+      throw new Error(
+        "Duplicate appointment already exists with same date, time, patient, office, and insurance. Appointment not created.",
+      );
+    }
+
+    console.log(
+      "[CREATE APPOINTMENT] No duplicate found, creating new appointment",
+    );
+
     const newAppointment = {
       officeName: officeName,
-      appointmentDate: new Date(data.appointmentDate),
+      appointmentDate: appointmentDateObj,
       appointmentTime: data.appointmentTime,
       provider: data.provider,
       patientId: data.patientId,

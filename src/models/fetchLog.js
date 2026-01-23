@@ -13,8 +13,8 @@ const fetchLogSchema = new mongoose.Schema(
     fetchOperations: [
       {
         timestamp: {
-          type: Date,
-          default: Date.now,
+          type: String, // Stored as CST timezone string (e.g., "2026-01-23T16:20:00-06:00")
+          required: true,
         },
         totalOffices: {
           type: Number,

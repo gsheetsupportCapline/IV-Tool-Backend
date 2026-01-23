@@ -43,7 +43,7 @@ async function fetchDataByOffice(officeName) {
           "patient.patient_id,patient_letter.prim_policy_holder,patient_letter.relation_to_prim_policy_holder,patient_letter.birth_date,appointment.start_time,chairs.chair_name,insurance_company.name,insurance_company.phone1,patient.prim_member_id,employer.name,employer.group_number,patient.first_name,patient.last_name,patient.medicaid_id,patient.carrier_id,appointment.confirmation_status,patient.cell_phone,patient.home_phone,patient.work_phone,patient.birth_date",
         columnCount: "20",
       },
-      timeout: 60000, // 60 seconds timeout
+      timeout: 20000, // 20 seconds timeout
     });
 
     console.log(`[AXIOS] Received response for office: ${officeName}`);
@@ -68,7 +68,7 @@ async function fetchDataByOffice(officeName) {
 
     if (error.code === "ECONNABORTED") {
       console.error(
-        `[TIMEOUT] Request timeout after 60 seconds for office: ${officeName}`,
+        `[TIMEOUT] Request timeout after 20 seconds for office: ${officeName}`,
       );
     } else if (error.response) {
       console.error(

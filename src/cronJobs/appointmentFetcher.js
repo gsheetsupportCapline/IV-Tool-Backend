@@ -7,11 +7,12 @@ const setupJob = () => {
   cron.schedule("0 */1 * * *", async () => {
     try {
       console.log("Running fetchAndSaveData every 1 hour");
-      const response = await appointmentService.fetchDataAndStoreAppointments();
+      const response =
+        await appointmentService.fetchDataAndStoreAppointments("cron");
       console.log("result", response);
       if (!response) {
         console.error(
-          "No response received from fetchDataAndStoreAppointments"
+          "No response received from fetchDataAndStoreAppointments",
         );
       } else {
         //
@@ -19,7 +20,7 @@ const setupJob = () => {
     } catch (error) {
       console.error(
         "Error occured while running fetchDataAndStoreAppointments:",
-        error
+        error,
       );
     }
   });

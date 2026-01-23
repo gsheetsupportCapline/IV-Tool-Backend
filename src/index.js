@@ -11,6 +11,7 @@ const userUpdateRoutes = require("./routes/user-update-routes.js");
 const officeDataRoutes = require("./routes/officeData-routes.js");
 const attendanceRoutes = require("./routes/attendance-routes.js");
 const healthRoutes = require("./routes/health-routes.js");
+const fetchLogRoutes = require("./routes/fetchLog-routes.js");
 const cors = require("cors");
 
 const setupJob = require("./cronJobs/appointmentFetcher");
@@ -37,6 +38,7 @@ app.use("/api/spreadsheet", googleSheetsRoutes);
 app.use("/api/user-update", userUpdateRoutes);
 app.use("/api/office-data", officeDataRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/fetch-logs", fetchLogRoutes);
 
 setupJob(); // setup Cron Job - Re-enabled after flat structure migration
 
