@@ -325,10 +325,12 @@ async function processOfficeAppointments(officeName) {
         // 1. Not found in fetched data
         // 2. Status is "Unassigned"
         // 3. Completion status is "IV Not Done"
+        // 4. Archive status is NOT "manual" (don't archive manually created appointments)
         if (
           !isInFetchedData &&
           existingAppointment.status === "Unassigned" &&
-          existingAppointment.completionStatus === "IV Not Done"
+          existingAppointment.completionStatus === "IV Not Done" &&
+          existingAppointment.archiveStatus !== "manual"
         ) {
           appointmentsToArchive.push(existingAppointment);
         }
@@ -657,6 +659,7 @@ async function createNewRushAppointment(officeName, data) {
       imageUrl: data.imageUrl,
       source: "Manual", // Mark as manually created
       status: "Unassigned", // Default status
+      archiveStatus: "manual", // Prevent auto-archiving
     };
 
     const result = await Appointment.create(newAppointment);

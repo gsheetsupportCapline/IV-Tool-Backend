@@ -175,6 +175,12 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    archiveStatus: {
+      type: String,
+      enum: ["auto", "manual"],
+      default: "auto",
+      required: false,
+    },
   },
   { timestamps: true },
 );
