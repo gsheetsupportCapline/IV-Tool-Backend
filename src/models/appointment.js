@@ -154,7 +154,7 @@ const appointmentSchema = new mongoose.Schema(
       default: null,
     },
     ivRequestedDate: {
-      type: Date,
+      type: String, // Changed to String to preserve exact CT -6 timezone without UTC conversion
     },
     ivAssignedDate: {
       type: Date,

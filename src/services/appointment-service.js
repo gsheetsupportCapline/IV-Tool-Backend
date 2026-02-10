@@ -202,8 +202,10 @@ async function processOfficeAppointments(officeName) {
     }
 
     // Get current date/time in America/Chicago timezone (Texas)
-    // This automatically handles CST (UTC-6) and CDT (UTC-5) with Daylight Saving Time
-    const texasTime = moment.tz("America/Chicago").toDate();
+    // Store as String to preserve exact CT -6 time without UTC conversion
+    const texasTime = moment
+      .tz("America/Chicago")
+      .format("YYYY-MM-DD HH:mm:ss");
 
     // Calculate the date range for fetched data (same as fetchDataByOffice)
     const currentDate = new Date();
