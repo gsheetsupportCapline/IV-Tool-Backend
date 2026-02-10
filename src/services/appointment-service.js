@@ -688,77 +688,123 @@ async function fetchUserAppointments(userId, startDate, endDate) {
       endDateObj: endDateObj.toISOString(),
     });
 
-    // UPDATED: Direct query on flat documents
-    const appointments = await Appointment.find({
-      assignedUser: userId,
-      ivAssignedDate: {
-        $gte: startDateObj,
-        $lte: endDateObj,
+    // UPDATED: Use aggregation pipeline with isPreviouslyCompleted check
+    const appointments = await Appointment.aggregate([
+      {
+        $match: {
+          assignedUser: userId,
+          ivAssignedDate: {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+        },
       },
-    })
-      .select({
-        _id: 1,
-        appointmentType: 1,
-        appointmentDate: 1,
-        appointmentTime: 1,
-        patientId: 1,
-        patientName: 1,
-        patientDOB: 1,
-        insuranceName: 1,
-        insurancePhone: 1,
-        policyHolderName: 1,
-        policyHolderDOB: 1,
-        memberId: 1,
-        employerName: 1,
-        groupNumber: 1,
-        relationWithPatient: 1,
-        medicaidId: 1,
-        carrierId: 1,
-        confirmationStatus: 1,
-        cellPhone: 1,
-        homePhone: 1,
-        workPhone: 1,
-        ivType: 1,
-        completionStatus: 1,
-        status: 1,
-        assignedUser: 1,
-        source: 1,
-        planType: 1,
-        ivRemarks: 1,
-        provider: 1,
-        noteRemarks: 1,
-        ivCompletedDate: 1,
-        ivAssignedDate: 1,
-        ivRequestedDate: 1,
-        ivAssignedByUserName: 1,
-        completedBy: 1,
-        officeName: 1,
-      })
-      .sort({ ivAssignedDate: -1 })
-      .lean();
-
-    // Map to match expected response format
-    const formattedAppointments = appointments.map((apt) => ({
-      ...apt,
-      office: apt.officeName,
-    }));
+      {
+        $addFields: {
+          office: "$officeName",
+          // Extract month and year from appointment date
+          appointmentMonth: {
+            $month: "$appointmentDate",
+          },
+          appointmentYear: {
+            $year: "$appointmentDate",
+          },
+        },
+      },
+      // Self-lookup to check if same patient + insurance was completed BEFORE current appointment
+      {
+        $lookup: {
+          from: "appointments",
+          let: {
+            patientId: "$patientId",
+            insuranceName: "$insuranceName",
+            appointmentMonth: "$appointmentMonth",
+            appointmentYear: "$appointmentYear",
+            currentAppointmentDate: "$appointmentDate",
+            currentAppointmentId: "$_id",
+            currentOfficeName: "$officeName",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    // Same office
+                    { $eq: ["$officeName", "$$currentOfficeName"] },
+                    // Same patient
+                    { $eq: ["$patientId", "$$patientId"] },
+                    // Same insurance
+                    {
+                      $eq: ["$insuranceName", "$$insuranceName"],
+                    },
+                    // Same month
+                    {
+                      $eq: [
+                        { $month: "$appointmentDate" },
+                        "$$appointmentMonth",
+                      ],
+                    },
+                    // Same year
+                    {
+                      $eq: [{ $year: "$appointmentDate" }, "$$appointmentYear"],
+                    },
+                    // Completion status is 'Completed'
+                    {
+                      $eq: ["$completionStatus", "Completed"],
+                    },
+                    // Different appointment (not comparing with itself)
+                    {
+                      $ne: ["$_id", "$$currentAppointmentId"],
+                    },
+                    // IMPORTANT: Completed BEFORE or ON the current appointment date
+                    {
+                      $lte: ["$appointmentDate", "$$currentAppointmentDate"],
+                    },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 }, // Just need to know if exists
+          ],
+          as: "previousCompletions",
+        },
+      },
+      {
+        $addFields: {
+          isPreviouslyCompleted: {
+            $cond: {
+              if: { $gt: [{ $size: "$previousCompletions" }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $unset: "previousCompletions",
+      },
+      {
+        $sort: { ivAssignedDate: -1 },
+      },
+    ]);
 
     console.log(
-      `Found ${formattedAppointments.length} appointments for userId: ${userId} with date filters`,
+      `Found ${appointments.length} appointments for userId: ${userId} with date filters`,
     );
 
     // Debug: Log some appointment dates if found
-    if (formattedAppointments.length > 0) {
+    if (appointments.length > 0) {
       console.log(
         "Sample appointment ivAssignedDates:",
-        formattedAppointments.slice(0, 3).map((apt) => ({
+        appointments.slice(0, 3).map((apt) => ({
           id: apt._id,
           ivAssignedDate: apt.ivAssignedDate,
+          isPreviouslyCompleted: apt.isPreviouslyCompleted,
         })),
       );
     }
 
-    return formattedAppointments;
+    return appointments;
   } catch (error) {
     console.error("Error at service layer fetching user appointments:", error);
     throw error;
